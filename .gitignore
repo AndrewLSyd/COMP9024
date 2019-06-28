@@ -1,0 +1,8 @@
+# gitignore file
+*.pdf
+*.html
+*.json
+*.ipch
+*.bin
+*.dist
+*.vscode
