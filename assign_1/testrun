@@ -1,0 +1,22 @@
+#!/bin/sh
+ PROG=./puzzle
+
+ case $1 in
+ 1) T=Tests/bad* ;;  # bad input
+ 2) T=Tests/sol* ;;  # solvable
+ 3) T=Tests/unsol* ;;  # unsolvable
+ 4) T=Tests/baX* ;; # bad input but long
+ 5) T=Tests/soX* ;;  # solvable but long
+ 6) T=Tests/unsoX* ;;  # unsolvable but long
+ esac
+
+ if [ A$T != A ]
+ then
+    for i in $T
+    do
+    echo =================  $i  ==================
+    $PROG $2 < $i
+    done
+ else
+    echo Usage $0 "[1|2|3]"
+ fi
