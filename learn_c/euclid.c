@@ -10,7 +10,7 @@ int euclid(int x, int y){
     }
     return x;
 }
-
+// comment here1
 int main(void){
     int x, y;
     printf("Please two natural numbers where the second number is greater than the first, \
