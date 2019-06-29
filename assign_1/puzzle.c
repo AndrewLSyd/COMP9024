@@ -1,4 +1,11 @@
 // puzzle.c - client
+// z3330164
+// Problem Statement: NxN sliding tile puzzle
+// Create a program that reads in from stdin, a NxN tile board in a predefined format,
+// checking whether a valid board has been inputted correctly. If the NxN board
+// has been inputed correctly, whether the board is solvable will be outputted to
+// stdout. If the board has not been inputted in correctly, an error message will be
+// outputted to stder
 
 #include "boardADT.h"
 #include <stdio.h>
