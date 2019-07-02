@@ -1,3 +1,5 @@
+4: revarg.c quack.c
+	clang -Wall -o revarg revarg.c quack.c
 3: sum3argB.c
 	dcc -Wall -O3 -o sum3argB sum3argB.c
 2: sum3argA.c
