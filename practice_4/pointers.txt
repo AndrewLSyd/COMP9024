@@ -1,0 +1,2 @@
+//pointers.txt
+int nums[12] = {
