@@ -10,8 +10,11 @@ int main(int argc, char ** argv){
 	}
 	printf("you have entered %s\n", *(argv + 1));
 	printf("converting this to an integer using atoi... %d\n", atoi(*(argv + 1)));
-	int my_num;
-	sscanf(*(argv + 1), "%d", &my_num);
-	printf("converting this to an integer using sscanf... %d\n", my_num);
+	int n;
+	sscanf(*(argv + 1), "%d", &n);
+	printf("converting this to an integer using sscanf... %d\n", n);
+	while (n > 0){
+		
+	}
 	return EXIT_SUCCESS;
 }
