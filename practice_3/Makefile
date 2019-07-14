@@ -1,8 +1,3 @@
-4: revarg.c quack.c
-	clang -Wall -o revarg revarg.c quack.c
-3: sum3argB.c
-	dcc -Wall -O3 -o sum3argB sum3argB.c
-2: sum3argA.c
-	dcc -Wall -O3 -o sum3argA sum3argA.c
-1: sum3str.c
-	dcc -o sum3str sum3str.c
+5: matcher.c quack.c
+	gcc -Wall -O3 -o matcher matcher.c quack.c
+
