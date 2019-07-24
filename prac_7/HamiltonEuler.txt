@@ -1,0 +1,17 @@
+
+Hamiltonian - visits every vertex exactly once. Edges, no more than once.
+Eulerarian - traverses each path once
+
+a.
+	i. no, B has odd degree
+	ii. yes, there are exactly two vertices of odd degree (B and D)
+	iii. yes (BAGFECD)
+	iv. yes, if there is a Hamiltonian cycle, truncate the last edge and you have a path
+
+b.
+	i. yes, all vertices are of even degree (enter and leave each vertex exactly once)
+	ii. no, Eulerian paths and cycles are mutually exclusive
+	iii. no
+	iv. yes (BAGFECD)
+
+
