@@ -50,7 +50,7 @@ int main(int argc, char ** argv){
 	}
 	
 	int * heap_ptr;	
-	heap_ptr = malloc((argc - 1) * sizeof(int));
+	heap_ptr = malloc(argc * sizeof(int));
 	
 	// setting first element to -999
 	*heap_ptr = -999;
