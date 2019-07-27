@@ -7,7 +7,9 @@
 #include <limits.h>
 
 #define MAX_CHAR 200
-#define DEL_CHAR -1 // sentinal to indicate char is to be deleted
+#define DEL_CHAR -1 // sentinel to indicate char is to be deleted
+#define ASCII_START 97  // letter a lowercase in ASCII code
+#define ASCII_END 122  // letter z lowercasein ASCII code
 
 int differByOne(char * char_1_ptr, char * char_2_ptr);
 int lenStr(char * char_ptr);
@@ -43,7 +45,7 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
             strcpy(char_2_cpy_ptr, char_2_ptr);
             // printf("made a copy of %s, %s\n", char_2_ptr, char_2_cpy_ptr);
             // printf("permuting the %dth letter:\n", i);
-            for (int j=97; j < 123; j++){  // ASCII codes for lower case [a-z]
+            for (int j=ASCII_START; j <= ASCII_END; j++){  // loop through lower case [a-z]
                 char_2_cpy_ptr[i] = j;
                 // printf("%s, ", char_2_cpy_ptr);
                 if (strcmp(char_2_cpy_ptr, char_1_ptr) == 0){
@@ -81,6 +83,33 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
     }
     // case 3: adding a character
     // cat -> Xcat, cXat, caXt, catX
+    else if (strlen(char_1_ptr) - strlen(char_2_ptr) == -1){  // only check if char_2 has one more char
+        // loop through and add one char at a time
+        // i is the position where we add a char:
+        //  c a t
+        // ^ ^ ^ ^
+        // 0 1 2 3
+        for (int i=0; i < strlen(char_1_ptr) + 1; i++){
+            // loop through alphabet [a-z]
+            for (int j=ASCII_START; j <= ASCII_END; j++){  // loop through lower case [a-z]{
+                // copy over new string with deleted char
+                int marker=0;  // marker for char_1_cpy_ptr
+                for (int k=0; k < strlen(char_1_ptr) + 1; k++){
+                    if (k == i){  // if  we are at the position to add a char
+                        *(char_1_cpy_ptr + marker) = j;
+                        marker++;
+                    }
+                    *(char_1_cpy_ptr + marker) = *(char_1_ptr + k );
+                    marker++;
+                }
+                *(char_1_cpy_ptr + j) = '\0';  // add sentinel
+                // printf("char_1_cpy_ptr is %s,  char_1_ptr is %s\n",  char_1_cpy_ptr, char_1_ptr) ;
+                if (strcmp(char_1_cpy_ptr, char_2_ptr) == 0){
+                    dbo = 3;
+                }
+            }
+        }
+    }
 
     return dbo;
 }
@@ -95,7 +124,7 @@ void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * 
     //     puts("\tassymetry error");
     //     return;
     // }
-    printf("  differByOne(%s, %s), exp: %d, act: %d...", x, y, expected, result);
+    printf("  (%s, %s), exp: %d, act: %d...", x, y, expected, result);
     if (result == expected){
         *correct += 1;
         if (result == 0){
@@ -137,10 +166,10 @@ int testDifferByOne(void){
 
     // should return 1
     testDifferByOneHelper(test_1, test_2, 1, &total, &correct);
-    testDifferByOneHelper(test_3, test_4, 1, &total, &correct);
+    testDifferByOneHelper(test_3, test_4, 3, &total, &correct);
     testDifferByOneHelper(test_6, test_9, 1, &total, &correct);
     testDifferByOneHelper(test_1, test_5, 1, &total, &correct);
-    testDifferByOneHelper(test_10, test_11, 1, &total, &correct);
+    testDifferByOneHelper(test_10, test_11, 3, &total, &correct);
     testDifferByOneHelper(BRAN, RAN, 2, &total, &correct);
     testDifferByOneHelper(SHAVE, test_10, 2, &total, &correct);
 
