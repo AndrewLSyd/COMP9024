@@ -41,12 +41,12 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
     // case 1: same number of character. need to test by changing letters one by one
     if (strlen(char_1_ptr) == strlen(char_2_ptr)){
         // hold char_1 constant and permute char_2
-        for (int i=0; i < strlen(char_2_ptr); i++){
+        for (int lp_chg_1=0; lp_chg_1 < strlen(char_2_ptr); lp_chg_1++){
             strcpy(char_2_cpy_ptr, char_2_ptr);
             // printf("made a copy of %s, %s\n", char_2_ptr, char_2_cpy_ptr);
             // printf("permuting the %dth letter:\n", i);
-            for (int j=ASCII_START; j <= ASCII_END; j++){  // loop through lower case [a-z]
-                char_2_cpy_ptr[i] = j;
+            for (int lp_add_2=ASCII_START; lp_add_2 <= ASCII_END; lp_add_2++){  // loop through lower case [a-z]
+                char_2_cpy_ptr[lp_chg_1] = lp_add_2;
                 // printf("%s, ", char_2_cpy_ptr);
                 if (strcmp(char_2_cpy_ptr, char_1_ptr) == 0){
                     // printf("\t\tSUCCESS: changing 1 letter in %s gives us %s\n", char_2_ptr, char_1_ptr);
@@ -59,20 +59,20 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
     // cat -> at, ct, ca
     else if (strlen(char_1_ptr) - strlen(char_2_ptr) == 1){  // only check if char_2 has one less char
         // puts("CHECKING REMOVE 1 CHAR");
-        for (int i=0; i < strlen(char_1_ptr); i++){  // loop through and del one char at a time
+        for (int lp_del_1=0; lp_del_1 < strlen(char_1_ptr); lp_del_1++){  // loop through and del one char at a time
             strcpy(char_temp_cpy_ptr, char_1_ptr);
             // remove ith char
-            *(char_temp_cpy_ptr + i) = DEL_CHAR;
+            *(char_temp_cpy_ptr + lp_del_1) = DEL_CHAR;
 
             // copy over new string with deleted char
-            int j=0;  // marker for char_1_cpy_ptr
-            for (int i=0; *(char_temp_cpy_ptr + i ) != '\0'; i++){
-                if (*(char_temp_cpy_ptr + i ) != DEL_CHAR){  // if not DEL_CHAR sentinal
-                    *(char_1_cpy_ptr + j) = *(char_temp_cpy_ptr + i );
-                    j++;
+            int mkr_del=0;  // marker for char_1_cpy_ptr
+            for (int lp_del_2=0; *(char_temp_cpy_ptr + lp_del_2 ) != '\0'; lp_del_2++){
+                if (*(char_temp_cpy_ptr + lp_del_2 ) != DEL_CHAR){  // if not DEL_CHAR sentinal
+                    *(char_1_cpy_ptr + mkr_del) = *(char_temp_cpy_ptr + lp_del_2 );
+                    mkr_del++;
                 }
             }
-            *(char_1_cpy_ptr + j) = '\0';  // add sentinel
+            *(char_1_cpy_ptr + mkr_del) = '\0';  // add sentinel
 
             // printf("\t\t\tchecking remove one char %s vs %s\n", char_1_cpy_ptr, char_2_ptr);
             if (strcmp(char_1_cpy_ptr, char_2_ptr) == 0){
@@ -89,20 +89,20 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
         //  c a t
         // ^ ^ ^ ^
         // 0 1 2 3
-        for (int i=0; i < strlen(char_1_ptr) + 1; i++){
+        for (int lp_add_1=0; lp_add_1 < strlen(char_1_ptr) + 1; lp_add_1++){
             // loop through alphabet [a-z]
-            for (int j=ASCII_START; j <= ASCII_END; j++){  // loop through lower case [a-z]{
+            for (int lp_add_2=ASCII_START; lp_add_2 <= ASCII_END; lp_add_2++){  // loop through lower case [a-z]{
                 // copy over new string with deleted char
-                int marker=0;  // marker for char_1_cpy_ptr
+                int mkr_add=0;  // marker for char_1_cpy_ptr
                 for (int k=0; k < strlen(char_1_ptr) + 1; k++){
-                    if (k == i){  // if  we are at the position to add a char
-                        *(char_1_cpy_ptr + marker) = j;
-                        marker++;
+                    if (k == lp_add_1){  // if  we are at the position to add a char
+                        *(char_1_cpy_ptr + mkr_add) = lp_add_2;
+                        mkr_add++;
                     }
-                    *(char_1_cpy_ptr + marker) = *(char_1_ptr + k );
-                    marker++;
+                    *(char_1_cpy_ptr + mkr_add) = *(char_1_ptr + k );
+                    mkr_add++;
                 }
-                *(char_1_cpy_ptr + j) = '\0';  // add sentinel
+                *(char_1_cpy_ptr + lp_add_2) = '\0';  // add sentinel
                 // printf("char_1_cpy_ptr is %s,  char_1_ptr is %s\n",  char_1_cpy_ptr, char_1_ptr) ;
                 if (strcmp(char_1_cpy_ptr, char_2_ptr) == 0){
                     dbo = 3;
