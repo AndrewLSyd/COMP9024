@@ -5,14 +5,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include "Graph.h"
 
-#define MAX_CHAR 200
+#define MAX_STRINGS 1000
+#define MAX_CHAR 50
 #define DEL_CHAR -1 // sentinel to indicate char is to be deleted
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
 
 int differByOne(char * char_1_ptr, char * char_2_ptr);
-int lenStr(char * char_ptr);
+int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]);
+void printDict(char my_dict[MAX_STRINGS][MAX_CHAR], int num_words);
+
 // test suite
 int testDifferByOne(void);
 
@@ -20,7 +24,33 @@ int main(void){
     puts("running owl.c ...\n");
     puts("testing differByOne()");
     testDifferByOne();
+
+    // read strings into an array of strings
+    int num_words;
+    char my_dict[MAX_STRINGS][MAX_CHAR];
+    num_words = readDict(my_dict);
+    printf("number of words read in is %d\n", num_words);
+    printDict(my_dict, num_words);
     return EXIT_SUCCESS;
+}
+
+int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]) {
+// reads strings from stdin into an array of strings and returns a pointer to it
+    int dict_ctr = 0;
+    int num_words = 0;
+    while (scanf("%s", my_dict[dict_ctr]) != EOF) {
+        printf("reading in %s\n", my_dict[dict_ctr]);
+        dict_ctr ++;
+        num_words += 1;
+    }
+    return num_words;
+}
+
+void printDict(char my_dict[MAX_STRINGS][MAX_CHAR], int num_words){
+    fprintf(stdout, "Dictionary\n");
+    for (int i=0; i < num_words; i++){
+        printf("%d: %s\n", i, my_dict[i]);
+    }
 }
 
 int differByOne(char * char_1_ptr, char * char_2_ptr){
@@ -157,10 +187,29 @@ int testDifferByOne(void){
     char * test_9 = "post";
     char * test_10 = "save";
     char * test_11 = "suave";
-    char * BRAN = "bran";
-    char * RAN = "ran";
-    char * SHAVE = "shave";
-
+    char * bran = "bran";
+    char * ran = "ran";
+    char * shave = "shave";
+    
+    // char * bear = "bear";
+    // char * beat = "beat";
+    char * beer = "beer";
+    char * dear = "dear";
+    char * deer = "deer";
+    char * fear = "fear";
+    char * feat = "feat";
+    char * hear = "hear";
+    // char * heat = "heat";
+    // char * meat = "meat";
+    char * near = "near";
+    // char * neat = "neat";
+    char * pear = "pear";
+    char * rear = "rear";
+    // char * seat = "seat";
+    char * tear = "tear";
+    char * wear = "wear";
+    char * year = "year";
+    
     int total = 0;
     int correct = 0;
 
@@ -170,8 +219,20 @@ int testDifferByOne(void){
     testDifferByOneHelper(test_6, test_9, 1, &total, &correct);
     testDifferByOneHelper(test_1, test_5, 1, &total, &correct);
     testDifferByOneHelper(test_10, test_11, 3, &total, &correct);
-    testDifferByOneHelper(BRAN, RAN, 2, &total, &correct);
-    testDifferByOneHelper(SHAVE, test_10, 2, &total, &correct);
+    testDifferByOneHelper(bran, ran, 2, &total, &correct);
+    testDifferByOneHelper(shave, test_10, 2, &total, &correct);
+    
+    testDifferByOneHelper("bear", "dear", 1, &total, &correct);
+    testDifferByOneHelper(dear, fear, 1, &total, &correct);
+    testDifferByOneHelper(fear, hear, 1, &total, &correct);
+    testDifferByOneHelper(hear, near, 1, &total, &correct);
+    testDifferByOneHelper(near, pear, 1, &total, &correct);
+    testDifferByOneHelper(pear, rear, 1, &total, &correct);
+    testDifferByOneHelper(rear, tear, 1, &total, &correct);
+    testDifferByOneHelper(tear, wear, 1, &total, &correct);
+    testDifferByOneHelper(wear, tear, 1, &total, &correct);
+    testDifferByOneHelper(rear, year, 1, &total, &correct);
+
 
     // should return 0
     testDifferByOneHelper(test_1, test_3, 0, &total, &correct);
@@ -179,6 +240,11 @@ int testDifferByOne(void){
     testDifferByOneHelper(test_3, test_5, 0, &total, &correct);
     testDifferByOneHelper(test_4, test_7, 0, &total, &correct);
     testDifferByOneHelper(test_1, test_8, 0, &total, &correct);
+    testDifferByOneHelper(feat, tear, 0, &total, &correct);
+    testDifferByOneHelper(shave, wear, 0, &total, &correct);
+    testDifferByOneHelper(beer, tear, 0, &total, &correct);
+    testDifferByOneHelper("beer", "tear", 0, &total, &correct);
+    testDifferByOneHelper(deer, year, 0, &total, &correct);
     printf("successes: %d, failures: %d, total: %d\n", correct, total - correct, total);
     return EXIT_SUCCESS;
 }
