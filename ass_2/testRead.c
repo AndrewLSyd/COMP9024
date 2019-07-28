@@ -21,7 +21,7 @@ int readNumV(void) { // returns the number of vertices numV or -1
 int readGraph(int numV, Graph g) { // reads number-number pairs until EOF
    int success = true;             // returns true if no error
    char * v1;
-   char * v2;
+   char *v2;
    while (scanf("%s %s", v1, v2) != EOF && success) {
        if (v1 < 0 || v1 >= numV || v2 < 0 || v2 >= numV) {
           fprintf(stderr, "unable to read edge\n");

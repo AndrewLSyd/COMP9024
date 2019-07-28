@@ -1,6 +1,5 @@
 // ordered word ladders assignment
 // COMP9024 Andrew Lau z3330164
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,34 +11,37 @@
 #define DEL_CHAR -1 // sentinel to indicate char is to be deleted
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
+#define ERROR_MEMORY "ERROR: malloc failed... out of memory\n"
 
+// function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
 int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]);
 void printDict(char my_dict[MAX_STRINGS][MAX_CHAR], int num_words);
 
-// test suite
-int testDifferByOne(void);
+// function prototypes for test suite
+int testDifferByOne(int verbose);
 
 int main(void){
     puts("running owl.c ...\n");
     puts("testing differByOne()");
-    testDifferByOne();
+    testDifferByOne(0);
 
     // read strings into an array of strings
     int num_words;
     char my_dict[MAX_STRINGS][MAX_CHAR];
     num_words = readDict(my_dict);
+
     printf("number of words read in is %d\n", num_words);
     printDict(my_dict, num_words);
     return EXIT_SUCCESS;
 }
 
 int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]) {
-// reads strings from stdin into an array of strings and returns a pointer to it
+    // reads strings from stdin into an array of strings and returns a pointer to it
     int dict_ctr = 0;
     int num_words = 0;
     while (scanf("%s", my_dict[dict_ctr]) != EOF) {
-        printf("reading in %s\n", my_dict[dict_ctr]);
+        // printf("reading in %s\n", my_dict[dict_ctr]);
         dict_ctr ++;
         num_words += 1;
     }
@@ -47,6 +49,8 @@ int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]) {
 }
 
 void printDict(char my_dict[MAX_STRINGS][MAX_CHAR], int num_words){
+    // inputs: array of strings, number of words
+    // returns: void. prints the dictionary.
     fprintf(stdout, "Dictionary\n");
     for (int i=0; i < num_words; i++){
         printf("%d: %s\n", i, my_dict[i]);
@@ -67,6 +71,11 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
     char * char_1_cpy_ptr = malloc(MAX_CHAR * sizeof(char));
     char * char_2_cpy_ptr = malloc(MAX_CHAR * sizeof(char));
     char * char_temp_cpy_ptr = malloc(MAX_CHAR * sizeof(char));
+    // check if malloc was successful
+    if (char_1_cpy_ptr == NULL || char_2_cpy_ptr == NULL || char_temp_cpy_ptr == NULL) {
+        fprintf(stderr, ERROR_MEMORY);
+        exit(1);
+    }
 
     // case 1: same number of character. need to test by changing letters one by one
     if (strlen(char_1_ptr) == strlen(char_2_ptr)){
@@ -144,8 +153,17 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
     return dbo;
 }
 
-// test suite below
-void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * correct){
+/***
+ *      _____         _     ____        _ _       
+ *     |_   _|__  ___| |_  / ___| _   _(_) |_ ___ 
+ *       | |/ _ \/ __| __| \___ \| | | | | __/ _ \
+ *       | |  __/\__ \ |_   ___) | |_| | | ||  __/
+ *       |_|\___||___/\__| |____/ \__,_|_|\__\___|
+ *                                                
+ */
+// marker you can ignore these
+
+void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * correct, int verbose){
     // input: two char ptrs and expected result to differByOne
     // output: increments total and correct appropriately
     *total += 1;
@@ -154,20 +172,30 @@ void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * 
     //     puts("\tassymetry error");
     //     return;
     // }
-    printf("  (%s, %s), exp: %d, act: %d...", x, y, expected, result);
+    if (verbose){
+        printf("  (%s, %s), exp: %d, act: %d...", x, y, expected, result);
+    }
     if (result == expected){
         *correct += 1;
         if (result == 0){
-            fprintf(stdout, " success (not DBO)\n");
+            if (verbose){
+                fprintf(stdout, " success (not DBO)\n");
+            }
         }
         if (result == 1){
-            fprintf(stdout, " success (DBO change 1 letter)\n");
+            if (verbose){
+                fprintf(stdout, " success (DBO change 1 letter)\n");
+            }
         }
         else if (result == 2){
-            fprintf(stdout, " success (DBO del 1 letter)\n");
+            if (verbose){
+                fprintf(stdout, " success (DBO del 1 letter)\n");
+            }
         }
         else if (result == 3){
-            fprintf(stdout, " success (DBO add 1 letter)\n");
+            if (verbose){
+                fprintf(stdout, " success (DBO add 1 letter)\n");
+            }
         }
     }
     else{
@@ -175,7 +203,8 @@ void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * 
     }
 }
 
-int testDifferByOne(void){
+int testDifferByOne(int verbose){
+    // test function with built in cases for DifferByOneFunction
     char * test_1 = "case";
     char * test_2 = "cast";
     char * test_3 = "cat";
@@ -214,37 +243,37 @@ int testDifferByOne(void){
     int correct = 0;
 
     // should return 1
-    testDifferByOneHelper(test_1, test_2, 1, &total, &correct);
-    testDifferByOneHelper(test_3, test_4, 3, &total, &correct);
-    testDifferByOneHelper(test_6, test_9, 1, &total, &correct);
-    testDifferByOneHelper(test_1, test_5, 1, &total, &correct);
-    testDifferByOneHelper(test_10, test_11, 3, &total, &correct);
-    testDifferByOneHelper(bran, ran, 2, &total, &correct);
-    testDifferByOneHelper(shave, test_10, 2, &total, &correct);
+    testDifferByOneHelper(test_1, test_2, 1, &total, &correct, verbose);
+    testDifferByOneHelper(test_3, test_4, 3, &total, &correct, verbose);
+    testDifferByOneHelper(test_6, test_9, 1, &total, &correct, verbose);
+    testDifferByOneHelper(test_1, test_5, 1, &total, &correct, verbose);
+    testDifferByOneHelper(test_10, test_11, 3, &total, &correct, verbose);
+    testDifferByOneHelper(bran, ran, 2, &total, &correct, verbose);
+    testDifferByOneHelper(shave, test_10, 2, &total, &correct, verbose);
     
-    testDifferByOneHelper("bear", "dear", 1, &total, &correct);
-    testDifferByOneHelper(dear, fear, 1, &total, &correct);
-    testDifferByOneHelper(fear, hear, 1, &total, &correct);
-    testDifferByOneHelper(hear, near, 1, &total, &correct);
-    testDifferByOneHelper(near, pear, 1, &total, &correct);
-    testDifferByOneHelper(pear, rear, 1, &total, &correct);
-    testDifferByOneHelper(rear, tear, 1, &total, &correct);
-    testDifferByOneHelper(tear, wear, 1, &total, &correct);
-    testDifferByOneHelper(wear, tear, 1, &total, &correct);
-    testDifferByOneHelper(rear, year, 1, &total, &correct);
+    testDifferByOneHelper("bear", "dear", 1, &total, &correct, verbose);
+    testDifferByOneHelper(dear, fear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(fear, hear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(hear, near, 1, &total, &correct, verbose);
+    testDifferByOneHelper(near, pear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(pear, rear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(rear, tear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(tear, wear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(wear, tear, 1, &total, &correct, verbose);
+    testDifferByOneHelper(rear, year, 1, &total, &correct, verbose);
 
 
     // should return 0
-    testDifferByOneHelper(test_1, test_3, 0, &total, &correct);
-    testDifferByOneHelper(test_1, test_4, 0, &total, &correct);
-    testDifferByOneHelper(test_3, test_5, 0, &total, &correct);
-    testDifferByOneHelper(test_4, test_7, 0, &total, &correct);
-    testDifferByOneHelper(test_1, test_8, 0, &total, &correct);
-    testDifferByOneHelper(feat, tear, 0, &total, &correct);
-    testDifferByOneHelper(shave, wear, 0, &total, &correct);
-    testDifferByOneHelper(beer, tear, 0, &total, &correct);
-    testDifferByOneHelper("beer", "tear", 0, &total, &correct);
-    testDifferByOneHelper(deer, year, 0, &total, &correct);
+    testDifferByOneHelper(test_1, test_3, 0, &total, &correct, verbose);
+    testDifferByOneHelper(test_1, test_4, 0, &total, &correct, verbose);
+    testDifferByOneHelper(test_3, test_5, 0, &total, &correct, verbose);
+    testDifferByOneHelper(test_4, test_7, 0, &total, &correct, verbose);
+    testDifferByOneHelper(test_1, test_8, 0, &total, &correct, verbose);
+    testDifferByOneHelper(feat, tear, 0, &total, &correct, verbose);
+    testDifferByOneHelper(shave, wear, 0, &total, &correct, verbose);
+    testDifferByOneHelper(beer, tear, 0, &total, &correct, verbose);
+    testDifferByOneHelper("beer", "tear", 0, &total, &correct, verbose);
+    testDifferByOneHelper(deer, year, 0, &total, &correct, verbose);
     printf("successes: %d, failures: %d, total: %d\n", correct, total - correct, total);
     return EXIT_SUCCESS;
 }
