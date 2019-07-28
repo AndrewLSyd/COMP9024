@@ -6,17 +6,18 @@
 #include <limits.h>
 #include "Graph.h"
 
-#define MAX_STRINGS 1000
-#define MAX_CHAR 50
-#define DEL_CHAR -1 // sentinel to indicate char is to be deleted
+#define MAX_WORDS 2000  // max number of words in dictionary (max vertices)
+#define MAX_CHAR 100  // max characters per word in dictionary
+#define SENT_DEL -1 // sentinel to indicate char is to be deleted
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
 #define ERROR_MEMORY "ERROR: malloc failed... out of memory\n"
 
 // function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
-int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]);
-void printDict(char my_dict[MAX_STRINGS][MAX_CHAR], int num_words);
+int readDict(char my_dict[MAX_WORDS][MAX_CHAR]);
+void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words);
+int readGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) ;
 
 // function prototypes for test suite
 int testDifferByOne(int verbose);
@@ -28,15 +29,46 @@ int main(void){
 
     // read strings into an array of strings
     int num_words;
-    char my_dict[MAX_STRINGS][MAX_CHAR];
+    char my_dict[MAX_WORDS][MAX_CHAR];
     num_words = readDict(my_dict);
 
     printf("number of words read in is %d\n", num_words);
     printDict(my_dict, num_words);
+
+    Graph g = newGraph(num_words);
+    fprintf(stdout, "Ordered Word Ladder Graph\n");    
+    readGraph(num_words, g, my_dict, 0);
+    showGraph(g);
+
     return EXIT_SUCCESS;
 }
 
-int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]) {
+int readGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) {
+    // input: number of vertices, pointer to graph
+    // returns: pointer to the graph with edges added
+    int success = 0;             // returns true if no error
+    int dbo;
+
+    // double loop to pairwise check if there is an edge
+    for (int lp_readgraph_1=0; lp_readgraph_1 < numV; lp_readgraph_1 ++){        
+        for (int lp_readgraph_2=0; lp_readgraph_2 < numV; lp_readgraph_2 ++){    
+            if (strcmp(dict[lp_readgraph_1], dict[lp_readgraph_2]) != 0){  // if the words are different
+                dbo = differByOne(dict[lp_readgraph_1], dict[lp_readgraph_2]);
+                if (dbo){
+                    insertEdge(newEdge(lp_readgraph_1, lp_readgraph_2), g);
+                    success = 1;
+                }
+                if (verbose){
+                    printf("differByOne %d: %s, %d: %s... %d\n", lp_readgraph_1, dict[lp_readgraph_1], lp_readgraph_2,
+                        dict[lp_readgraph_2], dbo);            
+                }
+            }
+        }
+    }
+    return success;
+}
+
+int readDict(char my_dict[MAX_WORDS][MAX_CHAR]) {
     // reads strings from stdin into an array of strings and returns a pointer to it
     int dict_ctr = 0;
     int num_words = 0;
@@ -48,7 +80,7 @@ int readDict(char my_dict[MAX_STRINGS][MAX_CHAR]) {
     return num_words;
 }
 
-void printDict(char my_dict[MAX_STRINGS][MAX_CHAR], int num_words){
+void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words){
     // inputs: array of strings, number of words
     // returns: void. prints the dictionary.
     fprintf(stdout, "Dictionary\n");
@@ -101,12 +133,12 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
         for (int lp_del_1=0; lp_del_1 < strlen(char_1_ptr); lp_del_1++){  // loop through and del one char at a time
             strcpy(char_temp_cpy_ptr, char_1_ptr);
             // remove ith char
-            *(char_temp_cpy_ptr + lp_del_1) = DEL_CHAR;
+            *(char_temp_cpy_ptr + lp_del_1) = SENT_DEL;
 
             // copy over new string with deleted char
             int mkr_del=0;  // marker for char_1_cpy_ptr
             for (int lp_del_2=0; *(char_temp_cpy_ptr + lp_del_2 ) != '\0'; lp_del_2++){
-                if (*(char_temp_cpy_ptr + lp_del_2 ) != DEL_CHAR){  // if not DEL_CHAR sentinal
+                if (*(char_temp_cpy_ptr + lp_del_2 ) != SENT_DEL){  // if not SENT_DEL sentinal
                     *(char_1_cpy_ptr + mkr_del) = *(char_temp_cpy_ptr + lp_del_2 );
                     mkr_del++;
                 }
@@ -128,6 +160,7 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
         //  c a t
         // ^ ^ ^ ^
         // 0 1 2 3
+        strcpy(char_1_cpy_ptr, char_1_ptr);
         for (int lp_add_1=0; lp_add_1 < strlen(char_1_ptr) + 1; lp_add_1++){
             // loop through alphabet [a-z]
             for (int lp_add_2=ASCII_START; lp_add_2 <= ASCII_END; lp_add_2++){  // loop through lower case [a-z]{
@@ -141,7 +174,7 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
                     *(char_1_cpy_ptr + mkr_add) = *(char_1_ptr + k );
                     mkr_add++;
                 }
-                *(char_1_cpy_ptr + lp_add_2) = '\0';  // add sentinel
+                *(char_1_cpy_ptr + mkr_add) = '\0';  // add sentinel
                 // printf("char_1_cpy_ptr is %s,  char_1_ptr is %s\n",  char_1_cpy_ptr, char_1_ptr) ;
                 if (strcmp(char_1_cpy_ptr, char_2_ptr) == 0){
                     dbo = 3;
