@@ -25,8 +25,9 @@ int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose
 void printArray(char * prefix, int * array_ptr, int n);
 void shortestPath(Graph g, Vertex start, Vertex goal, int numV);
 void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
-    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num, int word_num) ;
+    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num) ;
 void printPathList(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]);
+void printPathInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]);
 // function prototypes for test suite
 int testDifferByOne(int verbose);
 
@@ -40,6 +41,7 @@ int main(void){
     char my_dict[MAX_WORDS][MAX_CHAR];
     num_words = readDict(my_dict);    
     printDict(my_dict, num_words);
+    printf("num_words %d", num_words);
 
     Graph g = newGraph(num_words);
     fprintf(stdout, "Ordered Word Ladder Graph\n");    
@@ -57,18 +59,28 @@ int main(void){
     char my_paths[MAX_PATHS][MAX_WORDS];
     // initialise all to blank strings
     for (int i=0; i < MAX_PATHS; i ++){
-        for (int j=0; j < MAX_PATHS; j ++){
+        for (int j=0; j < MAX_WORDS; j ++){
             my_paths[i][j] = '\0';        
         }
     }
 
     int path_num = 0;
     // loop DFS search over all vertices
+    printPathList(my_paths, my_dict);
     for (int vertex=0; vertex < num_words; vertex ++){
-        dfsR(g, vertex, num_words, my_dict, out_str, my_paths, out_int, &path_num, 0);
+        dfsR(g, vertex, num_words, my_dict, out_str, my_paths, out_int, &path_num);
     }
     printPathList(my_paths, my_dict);
-    
+
+    // int path_len[MAX_PATHS] = {0};
+
+    for (int l=0; l < MAX_PATHS; l++){
+        if (*my_paths[l] != '\0'){
+            printf(" %s", my_paths[l]);
+            printPathInt(my_paths[l], my_dict);
+        }
+    } 
+  
     return EXIT_SUCCESS;
 }
 
@@ -117,7 +129,7 @@ void printPath(int parent[], int numV, Vertex v) {
 
 
 void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
-    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num, int word_num) {
+    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num) {
     // use recursive DFS to search ALL possible paths in the tree
     // a temp_str pointer is passed to each recursive function call
     // and once a leaf node is reached, this string representing
@@ -129,31 +141,36 @@ void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char *
         // out_str is a string representation of the path
     
     int has_children = 0;
-    char temp_str[10000];
+    char temp_str[100000];
     char temp_str_int[MAX_WORDS];
     strcpy(temp_str, out_str);
     strcpy(temp_str_int, out_str_int);
 
     strcat(temp_str, "->");    
     strcat(temp_str, my_dict[v]);
-    char temp_char = v + '0';
-    strcat(temp_str_int, &temp_char);
-    // printf(" %d-%s-%d ", v, my_dict[v], depth);   
-    
-    // depth += 1;
+    // char * temp_char = "";
+    // *temp_char = v + '0';
+    // strcat(temp_str_int, temp_char);
+
+    int i=0;
+    while (temp_str_int[i] != '\0'){
+        i ++;
+    }
+
+    temp_str_int[i] = v + '0';
+    temp_str_int[i + 1] = '\0';    
+
+        
     // find child nodes (connected and child nodes > parent)
     for (Vertex w = 0; w < numV; w++) {
         // printf("isEdge(%s, %s), %d\n", my_dict[v], my_dict[w], isEdge(newEdge(v,w), g))  ;          
         if (isEdge(newEdge(v,w), g) && w > v) {            
             has_children = 1;
-            dfsR(g, w, numV, my_dict, temp_str, paths, temp_str_int, path_num, word_num);
+            dfsR(g, w, numV, my_dict, temp_str, paths, temp_str_int, path_num);
+            // dfsR(g, w, numV, my_dict, temp_str, paths, out_str_int, path_num);
       }
    }
    if (has_children == 0){  // e.g. if leaf node
-    //    puts("LEAF NODE");
-    //    for (int tabs=0; tabs < depth; tabs++){
-    //        fprintf(stdout, "    ");
-    //    }
         printf("PATH: %s\n", temp_str);
         strcpy(paths[*path_num], temp_str_int);
         (*path_num) ++;

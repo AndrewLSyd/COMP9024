@@ -1,5 +1,5 @@
-# CC=~cs9024/bin/dcc
-CC = clang
+CC=~cs9024/bin/dcc
+# CC = clang
 CFLAGS=-I.
 DEPS=Graph.h Quack.h
 OBJ=GraphAM.o Quack.o owl.o
