@@ -43,10 +43,17 @@ Graph newGraph(int numVertices) {
     return g;
 }
 
+// GraphAM version
 Graph freeGraph(Graph g) {
-
-   // code not shown
-
+   if (g != NULL) {
+       int i;
+       for (i = 0; i < g->nV; i++) {
+           free(g->edges[i]);  // free the mallocs for each row ...
+       }
+       free(g->edges);         // now the malloc for the edges array ...
+       free(g);                // now the malloc for the graph rep
+       g = NULL;
+   }
    return g;
 }
 
@@ -89,9 +96,9 @@ void showEdge(Edge e) { // print an edge
 
 int isEdge(Edge e, Graph g) { // return 1 if edge found, otherwise 0
    int found = 0;
-
-   // code not shown
-
+   if (g != NULL && validV(g, e.v) && validV(g, e.w)) {
+      found = (g->edges[e.v][e.w] == 1);
+   }
    return found;
 }
 

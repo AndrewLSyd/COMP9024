@@ -1,2 +1,2 @@
-owl: owl.c GraphAM.c
-	gcc -Wall -O3 -o owl owl.c GraphAM.c
+owl: owl.c GraphAM.c Quack.c
+	clang -Wall -O3 -o owl owl.c GraphAM.c Quack.c

@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <string.h>
 #include "Graph.h"
+#include "Quack.h"
 
 #define MAX_WORDS 2000  // max number of words in dictionary (max vertices)
 #define MAX_CHAR 100  // max characters per word in dictionary
@@ -12,12 +14,16 @@
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
 #define ERROR_MEMORY "ERROR: malloc failed... out of memory\n"
+#define UNVISITED -1  // -1 to indicated invisted vertex for BFS
 
 // function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
 int readDict(char my_dict[MAX_WORDS][MAX_CHAR]);
 void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words);
-int readGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) ;
+int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) ;
+void printArray(char * prefix, int * array_ptr, int n);
+void shortestPath(Graph g, Vertex start, Vertex goal, int numV);
+void dfsR(Graph g, Vertex v, int numV, int depth, char my_dict[MAX_WORDS][MAX_CHAR], char * out_string);
 
 // function prototypes for test suite
 int testDifferByOne(int verbose);
@@ -30,20 +36,153 @@ int main(void){
     // read strings into an array of strings
     int num_words;
     char my_dict[MAX_WORDS][MAX_CHAR];
-    num_words = readDict(my_dict);
-
-    printf("number of words read in is %d\n", num_words);
+    num_words = readDict(my_dict);    
     printDict(my_dict, num_words);
 
     Graph g = newGraph(num_words);
     fprintf(stdout, "Ordered Word Ladder Graph\n");    
-    readGraph(num_words, g, my_dict, 0);
+    readIntoGraph(num_words, g, my_dict, 0);
     showGraph(g);
 
+    puts("finding shortest path...");
+
+    // shortestPath(Graph g, Vertex start, Vertex goal, int numV)
+
+    // testing print array
+
+    int test[5] = {-1,2,3,4,5};
+    printArray("test: ", test, 5);
+
+    shortestPath(g, 0, 4, num_words);
+
+    char out_str[10000] = "";
+    dfsR(g, 0, num_words, 0, my_dict, out_str);
+    
     return EXIT_SUCCESS;
 }
 
-int readGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) {
+void printPath(int parent[], int numV, Vertex v) {
+   if (parent[v] != UNVISITED) { // parent of start is UNVISITED
+      if (0 <= v && v < numV) {
+         printPath(parent, numV, parent[v]);
+         printf("-->");
+      }
+      else {
+         fprintf(stderr, "\nprintPath: invalid goal %d\n", v);
+      }
+   }
+   printf("%d", v); // the last call will print here first
+   return;
+}
+
+
+void dfsR(Graph g, Vertex v, int numV, int depth, char my_dict[MAX_WORDS][MAX_CHAR], char * out_string) {
+    // need new string each time!!
+    char temp_str[10000];
+    strcpy(temp_str, out_string);
+
+    strcat(temp_str, "->");
+    strcat(temp_str, my_dict[v]);
+    // printf(" %d-%s-%d ", v, my_dict[v], depth);   
+    int has_children = 0;
+    depth += 1;
+    // find child nodes (connected and child nodes > parent)
+    for (Vertex w = 0; w < numV; w++) {
+        // printf("isEdge(%s, %s), %d\n", my_dict[v], my_dict[w], isEdge(newEdge(v,w), g))  ;          
+        if (isEdge(newEdge(v,w), g) && w > v) {            
+            has_children = 1;
+            dfsR(g, w, numV, depth, my_dict, temp_str);
+      }
+   }
+   if (has_children == 0){
+    //    puts("LEAF NODE");
+    //    for (int tabs=0; tabs < depth; tabs++){
+    //        fprintf(stdout, "    ");
+    //    }
+        printf("PATH: %s\n", temp_str);
+   }
+  
+   return;
+}
+
+void printArray(char * prefix, int * array_ptr, int n){
+    // inputs: char ptr to a string for the prefix, int ptr to an array we want to print,
+        // number of elements in array
+    // prints array with a prefix
+    printf("%s", prefix);
+    printf("{%d", *array_ptr);
+    for (int i=1; i < n; i++){
+        printf(", %d", *(array_ptr + i));
+    }
+    fprintf(stdout, "}\n");
+}
+
+void shortestPath(Graph g, Vertex start, Vertex goal, int numV) {
+//    int *visited = mallocArray(numV);
+//    int *parent = mallocArray(numV);
+    
+    int *visited = malloc(numV * sizeof(int));
+    int *parent = malloc(numV * sizeof(int));
+
+    for (int lp_malloc=0; lp_malloc < numV; lp_malloc ++){
+        *(visited + lp_malloc) = UNVISITED;
+        *(parent + lp_malloc) = UNVISITED;
+    }
+    // int visited[MAX_WORDS] = {UNVISITED};    
+    // int parent[MAX_WORDS] = {UNVISITED};
+
+    printArray("INITIALISE Visited: ", visited, numV);   // debug
+    printArray("INITIALISE Parent : ", parent, numV);    // debug
+
+    // check if malloc was successful
+    // if (visited == NULL || parent == NULL) {
+    //     fprintf(stderr, ERROR_MEMORY);
+    //     exit(1);
+    // }
+
+   Quack q = createQuack();
+   qush(start, q);
+   showQuack(q);
+   int order = 0;
+   visited[start] = order++;
+   int found = 0;
+   printf("!isEmptyQuack(q) %d\n", !isEmptyQuack(q));
+   while (!isEmptyQuack(q) && !found) {      // FOUND TELLS US TO STOP        
+    // while (!isEmptyQuack(q)) {      // FOUND TELLS US TO STOP        
+      Vertex v = pop(q);      
+      for (Vertex w = 0; w < numV && !found; w++) {
+        // for (Vertex w = 0; w < numV; w++) {
+         if (isEdge(newEdge(v,w), g)) {      // for adjacent vertex w ...
+            if (visited[w] == UNVISITED) {   // ... if w is unvisited ...
+               qush(w, q);                   // ... queue w
+               printf("Doing edge %d-%d\n", v, w); // DEBUG
+               visited[w] = order++;         // w is now visited
+               parent[w] = v;                // w's PARENT is v
+               if (w == goal) {              // if w is the goal ...
+                  found = 1;                 // ..FOUND IT! NOW GET OUT
+               }
+            }
+         }
+      }
+   }
+   showQuack(q);
+   if (found) {    
+      printf("SHORTEST path from %d to %d is ", start, goal);
+      printPath(parent, numV, goal); // print path from START TO GOAL
+      putchar('\n');
+   }
+   else {
+      printf("no path found\n");
+   }
+   printArray("Visited: ", visited, numV);   // debug
+   printArray("Parent : ", parent, numV);    // debug
+   free(visited);
+   free(parent);
+   makeEmptyQuack(q);
+   return;
+}
+
+int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) {
     // input: number of vertices, pointer to graph
     // returns: pointer to the graph with edges added
     int success = 0;             // returns true if no error
