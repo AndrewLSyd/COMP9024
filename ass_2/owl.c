@@ -8,13 +8,14 @@
 #include "Graph.h"
 #include "Quack.h"
 
-#define MAX_WORDS 2000  // max number of words in dictionary (max vertices)
-#define MAX_CHAR 100  // max characters per word in dictionary
+#define MAX_WORDS 1005  // max number of words in dictionary (max vertices)
+#define MAX_CHAR 25  // max characters per word in dictionary
 #define SENT_DEL -1 // sentinel to indicate char is to be deleted
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
 #define ERROR_MEMORY "ERROR: malloc failed... out of memory\n"
 #define UNVISITED -1  // -1 to indicated invisted vertex for BFS
+#define MAX_PATHS 1000
 
 // function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
@@ -23,8 +24,9 @@ void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words);
 int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) ;
 void printArray(char * prefix, int * array_ptr, int n);
 void shortestPath(Graph g, Vertex start, Vertex goal, int numV);
-void dfsR(Graph g, Vertex v, int numV, int depth, char my_dict[MAX_WORDS][MAX_CHAR], char * out_string);
-
+void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
+    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num, int word_num) ;
+void printPathList(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]);
 // function prototypes for test suite
 int testDifferByOne(int verbose);
 
@@ -49,16 +51,54 @@ int main(void){
     // shortestPath(Graph g, Vertex start, Vertex goal, int numV)
 
     // testing print array
-
-    int test[5] = {-1,2,3,4,5};
-    printArray("test: ", test, 5);
-
-    shortestPath(g, 0, 4, num_words);
-
     char out_str[10000] = "";
-    dfsR(g, 0, num_words, 0, my_dict, out_str);
+    char out_int[MAX_WORDS] = "";
+    // initialising path list
+    char my_paths[MAX_PATHS][MAX_WORDS];
+    // initialise all to blank strings
+    for (int i=0; i < MAX_PATHS; i ++){
+        for (int j=0; j < MAX_PATHS; j ++){
+            my_paths[i][j] = '\0';        
+        }
+    }
+
+    int path_num = 0;
+    // loop DFS search over all vertices
+    for (int vertex=0; vertex < num_words; vertex ++){
+        dfsR(g, vertex, num_words, my_dict, out_str, my_paths, out_int, &path_num, 0);
+    }
+    printPathList(my_paths, my_dict);
     
     return EXIT_SUCCESS;
+}
+
+
+void printPathInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]){    
+    if (*(path_ptr) != '\0'){        
+        int word_count = 0;
+        for (int word=0; word < MAX_WORDS; word++){
+            if (*(path_ptr + word) != '\0'){                    
+                printf("-> %s ", dict[*(path_ptr + word) - '0']);
+                word_count ++;          
+            }            
+        }
+        printf(" (%d) \n", word_count);      
+    }
+}
+
+void printPathList(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]){
+    // inputs: path_str is a pointer to a str representation of the path, e.g. 0136 is
+        // word_0 -> word_1 -> word_3 -> word_6
+    // purpose: prints out the word path (natural langauge version)
+    puts("printPathList\n");
+    int word_count = 0;
+    for (int path=0; path < MAX_PATHS; path++){
+        if (my_paths[path][0] != '\0'){
+            word_count = 0;
+            printf("PATH %d: ", path);
+            printPathInt(my_paths[path], dict);
+        }
+    }
 }
 
 void printPath(int parent[], int numV, Vertex v) {
@@ -76,30 +116,47 @@ void printPath(int parent[], int numV, Vertex v) {
 }
 
 
-void dfsR(Graph g, Vertex v, int numV, int depth, char my_dict[MAX_WORDS][MAX_CHAR], char * out_string) {
-    // need new string each time!!
-    char temp_str[10000];
-    strcpy(temp_str, out_string);
-
-    strcat(temp_str, "->");
-    strcat(temp_str, my_dict[v]);
-    // printf(" %d-%s-%d ", v, my_dict[v], depth);   
+void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
+    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num, int word_num) {
+    // use recursive DFS to search ALL possible paths in the tree
+    // a temp_str pointer is passed to each recursive function call
+    // and once a leaf node is reached, this string representing
+    // the entire path is saved into an array representing all possible paths
+    // inputs:
+        // g is a ptr to the graph
+        // numV is the number of vertices in the graph
+        // my_dict is the dictionary of words
+        // out_str is a string representation of the path
+    
     int has_children = 0;
-    depth += 1;
+    char temp_str[10000];
+    char temp_str_int[MAX_WORDS];
+    strcpy(temp_str, out_str);
+    strcpy(temp_str_int, out_str_int);
+
+    strcat(temp_str, "->");    
+    strcat(temp_str, my_dict[v]);
+    char temp_char = v + '0';
+    strcat(temp_str_int, &temp_char);
+    // printf(" %d-%s-%d ", v, my_dict[v], depth);   
+    
+    // depth += 1;
     // find child nodes (connected and child nodes > parent)
     for (Vertex w = 0; w < numV; w++) {
         // printf("isEdge(%s, %s), %d\n", my_dict[v], my_dict[w], isEdge(newEdge(v,w), g))  ;          
         if (isEdge(newEdge(v,w), g) && w > v) {            
             has_children = 1;
-            dfsR(g, w, numV, depth, my_dict, temp_str);
+            dfsR(g, w, numV, my_dict, temp_str, paths, temp_str_int, path_num, word_num);
       }
    }
-   if (has_children == 0){
+   if (has_children == 0){  // e.g. if leaf node
     //    puts("LEAF NODE");
     //    for (int tabs=0; tabs < depth; tabs++){
     //        fprintf(stdout, "    ");
     //    }
         printf("PATH: %s\n", temp_str);
+        strcpy(paths[*path_num], temp_str_int);
+        (*path_num) ++;
    }
   
    return;

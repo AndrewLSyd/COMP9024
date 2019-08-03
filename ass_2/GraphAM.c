@@ -43,8 +43,7 @@ Graph newGraph(int numVertices) {
     return g;
 }
 
-// GraphAM version
-Graph freeGraph(Graph g) {
+Graph freeGraph(Graph g) { 
    if (g != NULL) {
        int i;
        for (i = 0; i < g->nV; i++) {
@@ -104,7 +103,7 @@ int isEdge(Edge e, Graph g) { // return 1 if edge found, otherwise 0
 
 void insertEdge(Edge e, Graph g) { // insert an edge into a graph 
    if (g == NULL) {
-      fprintf(stderr, "insertE: graph not initialised\n");
+      fprintf(stderr, "insertEdge: graph not initialised\n");
    }
    else {
        if (!validV(g, e.v) || !validV(g, e.w)) {
@@ -127,7 +126,7 @@ void removeEdge(Edge e, Graph g) { // remove an edge from a graph
     }
     else {
         if (!validV(g, e.v) || !validV(g, e.w)) {
-            fprintf(stderr, "removeE: invalid vertices\n");
+            fprintf(stderr, "removeEdge: invalid vertices\n");
         }
         else {
             if (isEdge(e, g) == 1) {   // is edge there?

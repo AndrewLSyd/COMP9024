@@ -1,8 +1,10 @@
-// Graph.h: ADT interface for undirected/unweighted graphs
+// Graph.h: generic interface for undirected/unweighted graphs
+
+#define UNVISITED -1
 
 typedef int Vertex;               // define a VERTEX
 
-typedef struct {                  // define an EDGE
+typedef struct {                  // define an Edge
   Vertex v;
   Vertex w;
 } Edge;
@@ -16,5 +18,5 @@ void showGraph(Graph);            // print the graph
 Edge newEdge(Vertex, Vertex);     // create a new edge
 void insertEdge(Edge, Graph);     // insert an edge
 void removeEdge(Edge, Graph);     // remove an edge
+int  isEdge(Edge, Graph);         // check edge exists
 void showEdge(Edge);              // print an edge
-int isEdge(Edge, Graph);          // check edge exists
