@@ -10,13 +10,12 @@
 
 #define MAX_WORDS 1005  // max number of words in dictionary (max vertices)
 #define MAX_CHAR 25  // max characters per word in dictionary
-#define SENT_DEL -1 // sentinel to indicate char is to be deleted
+#define MAX_PATHS 1000  // max number of paths we can search
+#define SENTINEL -1 // sentinel to indicate end of something (used in various places)
+#define UNVISITED -1  // -1 to indicated invisted vertex for BFS
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
 #define ERROR_MEMORY "ERROR: malloc failed... out of memory\n"
-#define UNVISITED -1  // -1 to indicated invisted vertex for BFS
-#define MAX_PATHS 1000
-#define SENTINEL -1
 
 // function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
@@ -24,17 +23,19 @@ int readDict(char my_dict[MAX_WORDS][MAX_CHAR]);
 void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words);
 int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) ;
 void shortestPath(Graph g, Vertex start, Vertex goal, int numV);
-void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
+void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * pathList_StrPrnt,
     char pathList_intStr[MAX_PATHS][MAX_WORDS], char path_intStr[MAX_WORDS], int * path_num_ptr,
     int * path_intArray_ptr, int * pathList_intArray_ptr);
-void printPathListStrInt(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]);
+void printPathListStrInt(char pathList_intStr[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]);
 void printPathStrInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]);
 void printPathInt(int * path_ptr, char dict[MAX_WORDS][MAX_CHAR]);
-void printPathListInt(int * my_paths, char dict[MAX_WORDS][MAX_CHAR]);
+void printPathListInt(int * pathList_intStr, char dict[MAX_WORDS][MAX_CHAR]);
 
 // helper function prototypes
-void printArray(char * prefix, int * array_ptr, int n);
+void printArray_char(char * prefix, int * array_ptr, int n);
 int * intdup(int * src, int len);
+void checkMalloc(void * ptr);
+void printArray_int(char * prefix, int * array_ptr, int n);
 
 // function prototypes for test suite   
 int testDifferByOne(int verbose);
@@ -56,30 +57,24 @@ int main(void){
     readIntoGraph(num_words, g, my_dict, 0);
     showGraph(g);
 
-    // initialising path list
-    char out_str[10000] = "";
-    char pathList_intStr[MAX_WORDS] = "";
-    char my_paths[MAX_PATHS][MAX_WORDS];
-
-    int * pathList_intArray = NULL;
-    pathList_intArray = malloc(MAX_PATHS * MAX_WORDS * sizeof(int));
-    if (pathList_intArray == NULL){
-        fprintf(stderr, ERROR_MEMORY);
-        exit(1);
-    }    
+    // initialising paths
+    char path_intStr[MAX_WORDS] = "";
     int * path_intArray = NULL;
-    path_intArray = malloc(MAX_WORDS * sizeof(int));
-    if (path_intArray == NULL){
-        fprintf(stderr, ERROR_MEMORY);
-        exit(1);
-    }   
+    path_intArray = malloc(MAX_WORDS * sizeof(int));    
+    checkMalloc(path_intArray);  // function that checks if NULL was returned by malloc
 
+    // initialising path list (used to store path in reursive DFS calls)
+    char pathList_StrPrnt[10000] = "";    
+    char pathList_intStr[MAX_PATHS][MAX_WORDS];
+    int * pathList_intArray_ptr = NULL;
+    pathList_intArray_ptr = malloc(MAX_PATHS * MAX_WORDS * sizeof(int));
+    checkMalloc(pathList_intArray_ptr);  // function that checks if NULL was returned by malloc
 
-    // initialise all to sentinels (just in case)
+    // initialise paths all to sentinels (just in case)
     for (int i=0; i < MAX_PATHS; i ++){
         for (int j=0; j < MAX_WORDS; j ++){
-            my_paths[i][j] = '\0';        
-            *(pathList_intArray + i * MAX_WORDS + j) = SENTINEL;
+            pathList_intStr[i][j] = '\0';        
+            *(pathList_intArray_ptr + i * MAX_WORDS + j) = SENTINEL;
         }
     }
     for (int k=0; k < MAX_WORDS; k++){
@@ -88,36 +83,75 @@ int main(void){
 
 
     // printPathInt
-    // *(pathList_intArray + 0) = 10;
-    // *(pathList_intArray + 1) = 9;
-    // *(pathList_intArray + 2) = 8;
-    // *(pathList_intArray + 3) = 7;
+    // *(pathList_intArray_ptr + 0) = 10;
+    // *(pathList_intArray_ptr + 1) = 9;
+    // *(pathList_intArray_ptr + 2) = 8;
+    // *(pathList_intArray_ptr + 3) = 7;
 
-    // *(pathList_intArray + MAX_WORDS + 0) = 7;
-    // *(pathList_intArray + MAX_WORDS + 1) = 6;
-    // *(pathList_intArray + MAX_WORDS + 2) = 5;
-    // *(pathList_intArray + MAX_WORDS + 3) = 4;
+    // *(pathList_intArray_ptr + MAX_WORDS + 0) = 7;
+    // *(pathList_intArray_ptr + MAX_WORDS + 1) = 6;
+    // *(pathList_intArray_ptr + MAX_WORDS + 2) = 5;
+    // *(pathList_intArray_ptr + MAX_WORDS + 3) = 4;
 
 
-    // printPathInt(pathList_intArray, my_dict);
-    // printPathInt(pathList_intArray + MAX_WORDS, my_dict);
-    // printPathListInt(pathList_intArray, my_dict);
+    // printPathInt(pathList_intArray_ptr, my_dict);
+    // printPathInt(pathList_intArray_ptr + MAX_WORDS, my_dict);
+    // printPathListInt(pathList_intArray_ptr, my_dict);
 
     int path_num = 0;
     // loop DFS search over all vertices
-    // printPathListStrInt(my_paths, my_dict);
+    // printPathListStrInt(pathList_intStr, my_dict);
     for (int vertex=0; vertex < num_words; vertex ++){
-        dfsR(g, vertex, num_words, my_dict, out_str, my_paths, pathList_intStr, &path_num, path_intArray, pathList_intArray);
+        dfsR(g, vertex, num_words, my_dict, pathList_StrPrnt, pathList_intStr, path_intStr, &path_num, path_intArray, pathList_intArray_ptr);
     }
-    // printPathListStrInt(my_paths, my_dict);
-    printPathListInt(pathList_intArray, my_dict);
+    // printPathListStrInt(pathList_intStr, my_dict);
+    printPathListInt(pathList_intArray_ptr, my_dict);
+
+
+    puts("START FINDING MAX PATH...\n");
+    // step 1: create array that has the lenths of all the paths
+    int * pathLengths_intArray_ptr = NULL;
+    pathLengths_intArray_ptr = malloc(MAX_PATHS * sizeof(int));
+    for (int lp_pliap=0; lp_pliap < MAX_PATHS; lp_pliap ++){
+        *(pathLengths_intArray_ptr + lp_pliap) = SENTINEL;
+    }
+    
+    // step 2: find length of all the paths
+    int * path_ptr = pathList_intArray_ptr;
+    int path_counter = 0;
+    int max_len = 0;
+
+    while (*(path_ptr) != SENTINEL){  // loop across paths
+        int * word_ptr = path_ptr;
+        int word_counter = 0;
+        while (*word_ptr != SENTINEL){  // loop across words in each path to find the path length
+            word_counter ++;
+            word_ptr ++;
+        }
+        *(pathLengths_intArray_ptr + path_counter) = word_counter;
+        if (word_counter > max_len){
+            max_len = word_counter;
+        }
+        // printf("PATH %d: %s -> ... length %d. max_len = %d\n", path_counter, my_dict[*(path_ptr)], word_counter, max_len);
+        path_counter++;
+        path_ptr += MAX_WORDS;  // next path
+    }
+
+    printArray_int("pathLengths_intArray_ptr", pathLengths_intArray_ptr, MAX_PATHS);
+
+    // step 3: print out paths with max lengths
+    for (int lp_iap2=0; *(pathLengths_intArray_ptr + lp_iap2) != SENTINEL; lp_iap2++){
+        if (*(pathLengths_intArray_ptr + lp_iap2) == max_len){            
+            printPathInt(pathList_intArray_ptr + lp_iap2 * MAX_WORDS, my_dict);   
+        }
+    } 
 
     // int path_len[MAX_PATHS] = {0};
 
     // for (int l=0; l < MAX_PATHS; l++){
-    //     if (*my_paths[l] != '\0'){
-    //         printf(" %s", my_paths[l]);
-    //         printPathStrInt(my_paths[l], my_dict);
+    //     if (*pathList_intStr[l] != '\0'){
+    //         printf(" %s", pathList_intStr[l]);
+    //         printPathStrInt(pathList_intStr[l], my_dict);
     //     }
     // } 
   
@@ -134,7 +168,7 @@ void dfsR(
     Vertex v,
     int numV,  // numV is the number of vertices in the graph
     char my_dict[MAX_WORDS][MAX_CHAR],  // my_dict is the dictionary of words
-    char * out_str,  // out_str is a string representation of the path
+    char * pathList_StrPrnt,  // pathList_StrPrnt is a string representation of the path
     char pathList_intStr[MAX_PATHS][MAX_WORDS],
     char path_intStr[MAX_WORDS],
     int * path_num_ptr,
@@ -147,7 +181,7 @@ void dfsR(
     int * temp_int_arr_ptr = NULL;
     
     // make a copy of the current path in the recursion
-    strcpy(temp_str, out_str);
+    strcpy(temp_str, pathList_StrPrnt);
     strcpy(temp_str_int, path_intStr);
     temp_int_arr_ptr = intdup(path_intArray_ptr, MAX_WORDS);
 
@@ -284,12 +318,12 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
         for (int lp_del_1=0; lp_del_1 < strlen(char_1_ptr); lp_del_1++){  // loop through and del one char at a time
             strcpy(char_temp_cpy_ptr, char_1_ptr);
             // remove ith char
-            *(char_temp_cpy_ptr + lp_del_1) = SENT_DEL;
+            *(char_temp_cpy_ptr + lp_del_1) = SENTINEL;
 
             // copy over new string with deleted char
             int mkr_del=0;  // marker for char_1_cpy_ptr
             for (int lp_del_2=0; *(char_temp_cpy_ptr + lp_del_2 ) != '\0'; lp_del_2++){
-                if (*(char_temp_cpy_ptr + lp_del_2 ) != SENT_DEL){  // if not SENT_DEL sentinal
+                if (*(char_temp_cpy_ptr + lp_del_2 ) != SENTINEL){  // if not SENTINEL sentinal
                     *(char_1_cpy_ptr + mkr_del) = *(char_temp_cpy_ptr + lp_del_2 );
                     mkr_del++;
                 }
@@ -383,16 +417,16 @@ void printPathStrInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]){
     // }
 }
 
-void printPathListStrInt(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]){
+void printPathListStrInt(char pathList_intStr[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]){
     // inputs: array of strings representing paths
     // purpose: prints out the word path of all paths in my_path
     puts("printPathListStrInt\n");
     int word_count = 0;
     for (int path=0; path < MAX_PATHS; path++){
-        if (my_paths[path][0] != '\0'){
+        if (pathList_intStr[path][0] != '\0'){
             word_count = 0;
             printf("PATH %d: ", path);
-            printPathStrInt(my_paths[path], dict);
+            printPathStrInt(pathList_intStr[path], dict);
         }
     }
 }
@@ -417,7 +451,19 @@ void printPath(int parent[], int numV, Vertex v) {
 //  |  _  |  __/ | |_) |  __/ |    |  _| |_| | | | | (__| |_| | (_) | | | \__ \
 //  |_| |_|\___|_| .__/ \___|_|    |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
 //               |_|                                                           
-void printArray(char * prefix, int * array_ptr, int n){
+void printArray_char(char * prefix, int * array_ptr, int n){
+    // inputs: char ptr to a string for the prefix, int ptr to an array we want to print,
+        // number of elements in array
+    // prints array with a prefix
+    printf("%s", prefix);
+    printf("{%d", *array_ptr);
+    for (int i=1; i < n; i++){
+        printf(", %d", *(array_ptr + i));
+    }
+    fprintf(stdout, "}\n");
+}
+
+void printArray_int(char * prefix, int * array_ptr, int n){
     // inputs: char ptr to a string for the prefix, int ptr to an array we want to print,
         // number of elements in array
     // prints array with a prefix
@@ -436,6 +482,14 @@ int * intdup(int * src, int len)
    return p;
 }
 
+void checkMalloc(void * ptr){
+    // input: pointer
+    // checks if malloc worked (e.g. NULL not returned)
+    if (ptr == NULL){
+        fprintf(stderr, ERROR_MEMORY);
+        exit(1);
+    }   
+}
 //   _____         _       
 //  |_   _|__  ___| |_ ___ 
 //    | |/ _ \/ __| __/ __|
