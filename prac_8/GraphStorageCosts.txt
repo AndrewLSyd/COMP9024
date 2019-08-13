@@ -1,0 +1,51 @@
+
+(a)
+ints: nV, nE, numVertices ** 2 (adjacency matrix)
+	= V ** 2 + 2
+	= 4 * V ** 2 + 8
+pointers: pointer to adjacency matrix array, numVertices x pointer to row in adjacency matrix = 1 + V = 8 + 8V
+
+overall struct: int nV, int nE, pointer edges to adjacency matrix
+adjacency matrix: numVertices x pointer to row in adjacency matrix (8 * V), each row has numVertices ints (4 * V ^ 2)
+
+just the adjacency matrix = V pointers + V ^ 2 ints = 8 * V + 4 * V ^ 2
+
+(b)
+just the adjacency matrix for linked list representation
+	- V pointers = 8 * V
+	- for each edge, (int + pointer). Each edge is represented twice.
+		- 2 * E * (4 + 8)
+	- 8V + 24E
+
+(c)
+need AM < AL
+8 * V + 4 * V ^ 2 < 8V + 24E
+4 * V ^ 2 < 24E
+
+V ^ 2 < 6E
+
+if V = 100, then
+100 ^ 2 < 6E -> E > 10000 / 6 = 1666.67
+e.g. E >= 1667
+
+asymptotically, V^2 should dominate E, so for very, very large graphs linked list will be more storage efficient
+
+(d)
+if the AM uses bytes (just using 1s and 0s)
+just the adjacency matrix = V pointers + V ^ 2 bytes = 8 * V + V ^ 2
+
+AM: 8V + V^2
+AL: 8V + 24E
+want AM < AL
+V^2 < 24E
+
+now in order for AM to be more space efficient, we require:
+	V^2 / E < 24, rather than V^2 / E < 6
+
+asypmtotically, AL will still be more efficient, but when the ratio is less than 24 AM is more efficient
+
+
+
+
+
+
