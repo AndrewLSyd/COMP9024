@@ -6,6 +6,7 @@ On_Gre='[42m';
 passcounter=0
 failcounter=0
 totalcounter=0
+rm fail.txt
 
 for f in `find -L tests -name *.in -type f | sort`
 do
@@ -18,6 +19,7 @@ do
         passcounter=$((passcounter+1))
     else
         failcounter=$((failcounter+1))
+        echo "$f" >> fail.txt
     fi
     totalcounter=$((totalcounter+1))
 done

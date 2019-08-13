@@ -1,5 +1,21 @@
-// ordered word ladders assignment
+// Ordered Word Letters Assignment
 // COMP9024 Andrew Lau z3330164
+// ===== README =====
+// Hi Albert/Harrison,
+// Summary of program:
+    //
+// Structure:
+// Thanks!
+// removing strings passed 27/46, MAX_PATHS = 1005
+// MAX_PATHS = 10_000... passed 30!
+// MAX_PATHS = 100_000...passsed 32?
+// MAX_PATHS = 1_000_000...passsed X?? <_ this is really slow though?
+// MAX_PATHS = 100_000, added limit to 99 max laders... passed 34
+// MAX_PATHS = 100_000, MAX_LADDERS = 99, no dup. dict words ... passed 37
+// let's try realloc...??
+// longest word ladders past 99 are omitted
+// test case 25... seems to be need a lot of room for max paths!
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,285 +26,248 @@
 
 #define MAX_WORDS 1005  // max number of words in dictionary (max vertices)
 #define MAX_CHAR 25  // max characters per word in dictionary
-#define SENT_DEL -1 // sentinel to indicate char is to be deleted
+#define MAX_PATHS 4  // max number of paths we can search
+#define MAX_LADDERS 99  // max. number of word ladders to display
+#define SENTINEL -1 // sentinel to indicate end of something (used in various places)
+#define UNVISITED -1  // -1 to indicated invisted vertex for BFS
 #define ASCII_START 97  // letter a lowercase in ASCII code
 #define ASCII_END 122  // letter z lowercasein ASCII code
 #define ERROR_MEMORY "ERROR: malloc failed... out of memory\n"
-#define UNVISITED -1  // -1 to indicated invisted vertex for BFS
-#define MAX_PATHS 1000
 
 // function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
+void dfsR(
+    // use recursive DFS to search ALL possible paths in the tree
+    // a temp_str pointer is passed to each recursive function call
+    // and once a leaf node is reached, this string representing
+    // the entire path is saved into an array representing all possible paths
+    // inputs:
+    Graph g,  // g is a ptr to the graph
+    Vertex v,  // current vertex number
+    int numV,  // numV is the number of vertices in the graph
+    char my_dict[MAX_WORDS][MAX_CHAR],  // my_dict is the dictionary of words
+    // char * pathList_StrPrnt,  // pathList_StrPrnt is a string representation of the path
+    int * path_num_ptr,
+    int * path_intArray_ptr,
+    int * pathList_intArray_ptr,
+    int * max_paths_ptr  // for dynamic memory allocation
+    );
+
+// function prototypes used for reading/printing
 int readDict(char my_dict[MAX_WORDS][MAX_CHAR]);
 void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words);
 int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) ;
-void printArray(char * prefix, int * array_ptr, int n);
-void shortestPath(Graph g, Vertex start, Vertex goal, int numV);
-void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
-    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num, int word_num) ;
-void printPathList(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]);
-// function prototypes for test suite
+void printPathListStrInt(char pathList_intStr[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]);
+void printPathStrInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]);
+void printPathInt(int * path_ptr, char dict[MAX_WORDS][MAX_CHAR]);
+void printPathListInt(int * pathList_intStr, char dict[MAX_WORDS][MAX_CHAR]);
+
+// helper function prototypes
+void printArray_char(char * prefix, int * array_ptr, int n);
+int * copy_IntArray(int * src, int len);
+void checkMalloc(void * ptr);
+void printArray_int(char * prefix, int * array_ptr, int n);
+
+// function prototypes for test suite   
 int testDifferByOne(int verbose);
 
-int main(void){
-    puts("running owl.c ...\n");
-    puts("testing differByOne()");
-    testDifferByOne(0);
+int main(void){    
+    // puts("testing differByOne()");
+    // testDifferByOne(0);
 
     // read strings into an array of strings
     int num_words;
     char my_dict[MAX_WORDS][MAX_CHAR];
     num_words = readDict(my_dict);    
     printDict(my_dict, num_words);
+    // printf("num_words %d", num_words);
 
     Graph g = newGraph(num_words);
     fprintf(stdout, "Ordered Word Ladder Graph\n");    
     readIntoGraph(num_words, g, my_dict, 0);
     showGraph(g);
 
-    puts("finding shortest path...");
+    // initialising path vars (used to store path in recursive DFS calls)    
+    int * path_intArray = NULL;  // stored as an int array FINAL one used
+    path_intArray = malloc(MAX_WORDS * sizeof(int));    
+    checkMalloc(path_intArray);  // function that checks if NULL was returned by malloc
 
-    // shortestPath(Graph g, Vertex start, Vertex goal, int numV)
+    // initialising path list (lists of all paths)
+    // char pathList_StrPrnt[10000] = "";  <-- used for DEBUG    
+    int * pathList_intArray_ptr = NULL;
+    int max_paths = MAX_PATHS;
+    pathList_intArray_ptr = malloc(max_paths * MAX_WORDS * sizeof(int));
+    checkMalloc(pathList_intArray_ptr);  // function that checks if NULL was returned by malloc
 
-    // testing print array
-    char out_str[10000] = "";
-    char out_int[MAX_WORDS] = "";
-    // initialising path list
-    char my_paths[MAX_PATHS][MAX_WORDS];
-    // initialise all to blank strings
-    for (int i=0; i < MAX_PATHS; i ++){
-        for (int j=0; j < MAX_PATHS; j ++){
-            my_paths[i][j] = '\0';        
+    // initialise paths/path lists all to sentinels (just in case)
+    for (int i=0; i < max_paths; i ++){
+        for (int j=0; j < MAX_WORDS; j ++){
+            // pathList_intStr[i][j] = '\0';        
+            *(pathList_intArray_ptr + i * MAX_WORDS + j) = SENTINEL;
         }
+    }
+    for (int k=0; k < MAX_WORDS; k++){
+        *(path_intArray + k) = SENTINEL;
     }
 
     int path_num = 0;
     // loop DFS search over all vertices
+    // printPathListStrInt(pathList_intStr, my_dict);
     for (int vertex=0; vertex < num_words; vertex ++){
-        dfsR(g, vertex, num_words, my_dict, out_str, my_paths, out_int, &path_num, 0);
+        dfsR(g, vertex, num_words, my_dict
+            // , pathList_StrPrnt
+            // , pathList_intStr
+            // , path_intStr
+            , &path_num, path_intArray, pathList_intArray_ptr, &max_paths);
+    }    
+
+    // printPathListInt(pathList_intArray_ptr, my_dict);
+    // step 1: create array that has the lenths of all the paths
+    int * pathLengths_intArray_ptr = NULL;
+    pathLengths_intArray_ptr = malloc(max_paths * sizeof(int));
+    for (int lp_pliap=0; lp_pliap < max_paths; lp_pliap ++){
+        *(pathLengths_intArray_ptr + lp_pliap) = SENTINEL;
     }
-    printPathList(my_paths, my_dict);
     
+    // step 2: find length of all the paths
+    int * path_ptr = pathList_intArray_ptr;
+    int path_counter = 0;
+    int max_len = 0;
+
+    while (*(path_ptr) != SENTINEL){  // loop across paths
+        int * word_ptr = path_ptr;
+        int word_counter = 0;
+        while (*word_ptr != SENTINEL){  // loop across words in each path to find the path length
+            word_counter ++;
+            word_ptr ++;
+        }
+        *(pathLengths_intArray_ptr + path_counter) = word_counter;
+        if (word_counter > max_len){
+            max_len = word_counter;
+        }
+        // printf("PATH %d: %s -> ... length %d. max_len = %d\n", path_counter, my_dict[*(path_ptr)], word_counter, max_len);
+        path_counter++;
+        path_ptr += MAX_WORDS;  // next path
+    }
+
+    // printArray_int("pathLengths_intArray_ptr", pathLengths_intArray_ptr, MAX_PATHS);
+
+    // step 3: print out paths with max lengths
+    printf("Longest ladder length: %d\nLongest ladders:\n", max_len);
+    int longest_ladder_counter = 0;
+    for (int lp_iap2=0; *(pathLengths_intArray_ptr + lp_iap2) != SENTINEL; lp_iap2++){
+        if (*(pathLengths_intArray_ptr + lp_iap2) == max_len && longest_ladder_counter < MAX_LADDERS){            
+            longest_ladder_counter ++;
+            printf("%2d: ", longest_ladder_counter);
+            printPathInt(pathList_intArray_ptr + lp_iap2 * MAX_WORDS, my_dict);            
+        }
+    } 
+
     return EXIT_SUCCESS;
 }
 
-
-void printPathInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]){    
-    if (*(path_ptr) != '\0'){        
-        int word_count = 0;
-        for (int word=0; word < MAX_WORDS; word++){
-            if (*(path_ptr + word) != '\0'){                    
-                printf("-> %s ", dict[*(path_ptr + word) - '0']);
-                word_count ++;          
-            }            
-        }
-        printf(" (%d) \n", word_count);      
-    }
-}
-
-void printPathList(char my_paths[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]){
-    // inputs: path_str is a pointer to a str representation of the path, e.g. 0136 is
-        // word_0 -> word_1 -> word_3 -> word_6
-    // purpose: prints out the word path (natural langauge version)
-    puts("printPathList\n");
-    int word_count = 0;
-    for (int path=0; path < MAX_PATHS; path++){
-        if (my_paths[path][0] != '\0'){
-            word_count = 0;
-            printf("PATH %d: ", path);
-            printPathInt(my_paths[path], dict);
-        }
-    }
-}
-
-void printPath(int parent[], int numV, Vertex v) {
-   if (parent[v] != UNVISITED) { // parent of start is UNVISITED
-      if (0 <= v && v < numV) {
-         printPath(parent, numV, parent[v]);
-         printf("-->");
-      }
-      else {
-         fprintf(stderr, "\nprintPath: invalid goal %d\n", v);
-      }
-   }
-   printf("%d", v); // the last call will print here first
-   return;
-}
-
-
-void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], char * out_str,
-    char paths[MAX_PATHS][MAX_WORDS], char out_str_int[MAX_WORDS], int * path_num, int word_num) {
+/***
+ *       ____                  _____        ___        __                  _   _                 
+ *      / ___|___  _ __ ___   / _ \ \      / / |      / _|_   _ _ __   ___| |_(_) ___  _ __  ___ 
+ *     | |   / _ \| '__/ _ \ | | | \ \ /\ / /| |     | |_| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+ *     | |__| (_) | | |  __/ | |_| |\ V  V / | |___  |  _| |_| | | | | (__| |_| | (_) | | | \__ \
+ *      \____\___/|_|  \___|  \___/  \_/\_/  |_____| |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+ *                                                                                               
+ */
+void dfsR(
     // use recursive DFS to search ALL possible paths in the tree
     // a temp_str pointer is passed to each recursive function call
     // and once a leaf node is reached, this string representing
     // the entire path is saved into an array representing all possible paths
     // inputs:
-        // g is a ptr to the graph
-        // numV is the number of vertices in the graph
-        // my_dict is the dictionary of words
-        // out_str is a string representation of the path
+    Graph g,  // g is a ptr to the graph
+    Vertex v,  // current vertex number
+    int numV,  // numV is the number of vertices in the graph
+    char my_dict[MAX_WORDS][MAX_CHAR],  // my_dict is the dictionary of words
+    // char * pathList_StrPrnt,  // pathList_StrPrnt is a string representation of the path
+    int * path_num_ptr,
+    int * path_intArray_ptr,
+    int * pathList_intArray_ptr,
+    int * max_paths_ptr  // for dynamic memory allocation
+    ) {        
     
+    // initialise vars
     int has_children = 0;
-    char temp_str[10000];
-    char temp_str_int[MAX_WORDS];
-    strcpy(temp_str, out_str);
-    strcpy(temp_str_int, out_str_int);
-
-    strcat(temp_str, "->");    
-    strcat(temp_str, my_dict[v]);
-    char temp_char = v + '0';
-    strcat(temp_str_int, &temp_char);
-    // printf(" %d-%s-%d ", v, my_dict[v], depth);   
+    // char temp_str[100000];
+    int * temp_int_arr_ptr = NULL;
     
-    // depth += 1;
+    // make a copy of the current path in the recursion
+    // strcpy(temp_str, pathList_StrPrnt);
+    temp_int_arr_ptr = copy_IntArray(path_intArray_ptr, MAX_WORDS);
+
+    // add current node to current path in recursion
+    // strcat(temp_str, "->");    
+    // strcat(temp_str, my_dict[v]);
+
+    int lp_iap=0;
+    while (*(temp_int_arr_ptr + lp_iap) != SENTINEL){        
+        lp_iap ++;
+    }
+    *(temp_int_arr_ptr + lp_iap) = v;
+        
     // find child nodes (connected and child nodes > parent)
     for (Vertex w = 0; w < numV; w++) {
         // printf("isEdge(%s, %s), %d\n", my_dict[v], my_dict[w], isEdge(newEdge(v,w), g))  ;          
         if (isEdge(newEdge(v,w), g) && w > v) {            
             has_children = 1;
-            dfsR(g, w, numV, my_dict, temp_str, paths, temp_str_int, path_num, word_num);
+            dfsR(g, w, numV, my_dict
+            // , temp_str
+            // , pathList_intStr
+            // , temp_str_int
+            , path_num_ptr, temp_int_arr_ptr,
+                pathList_intArray_ptr, max_paths_ptr);            
       }
    }
    if (has_children == 0){  // e.g. if leaf node
-    //    puts("LEAF NODE");
-    //    for (int tabs=0; tabs < depth; tabs++){
-    //        fprintf(stdout, "    ");
-    //    }
-        printf("PATH: %s\n", temp_str);
-        strcpy(paths[*path_num], temp_str_int);
-        (*path_num) ++;
+        // save full path in path list
+        // temp_str is a DEBUG, prints entire path when leaf node is reached
+        // printf("PATH: %s\n", temp_str);
+        // strcpy(pathList_intStr[*path_num_ptr], temp_str_int);
+        // dynamic memory allocation
+        
+        if (*path_num_ptr == ((*max_paths_ptr) - 1)){
+            // pathList_intArray_ptr = malloc(max_paths * MAX_WORDS * sizeof(int));            
+            *max_paths_ptr = *max_paths_ptr * 2;  // double memory allocation if run out
+            printf("REALLOC max_paths now %d\n", *max_paths_ptr);            
+            pathList_intArray_ptr = (int*)realloc(pathList_intArray_ptr, (*max_paths_ptr) * MAX_WORDS * sizeof(int));
+            checkMalloc(path_intArray_ptr);
+            
+            // SENTINELS!
+            for (int i=(*max_paths_ptr)/2; i < *max_paths_ptr; i ++){
+                for (int j=0; j < MAX_WORDS; j ++){                    
+                    *(pathList_intArray_ptr + i * MAX_WORDS + j) = SENTINEL;
+                }
+            }
+            printf("REALLOC DONE, (*max_paths_ptr) * MAX_WORDS is %d ints\n", (*max_paths_ptr) * MAX_WORDS);
+        }
+        printf("*path_num_ptr is %d, MAX_WORDS * (*path_num_ptr) is %d\n", *path_num_ptr, MAX_WORDS * (*path_num_ptr));
+        // point to beginning of path
+        int * path_ptr = (pathList_intArray_ptr + MAX_WORDS * (*path_num_ptr));
+        puts("path_ptr assigned\n");
+        
+        for (int lp_path_ptr=0; *(temp_int_arr_ptr + lp_path_ptr) != SENTINEL && lp_path_ptr < MAX_WORDS; lp_path_ptr++){
+            // printf("*(temp_int_arr_ptr + lp_path_ptr) = %d, *temp_int_arr_ptr = %d, lp_path_ptr = %d", *(temp_int_arr_ptr + lp_path_ptr), *temp_int_arr_ptr, lp_path_ptr);
+            // printf("\tassigning *(temp_int_arr_ptr + lp_path_ptr) = %d to *path_ptr = %d\n", *(temp_int_arr_ptr + lp_path_ptr),*path_ptr);
+            //HERE!
+            printf("*(temp_int_arr_ptr + lp_path_ptr) is %d\n", *(temp_int_arr_ptr + lp_path_ptr));
+            *path_ptr =  *(temp_int_arr_ptr + lp_path_ptr);
+            path_ptr ++;
+        }
+        (*path_num_ptr) ++;
    }
   
    return;
 }
 
-void printArray(char * prefix, int * array_ptr, int n){
-    // inputs: char ptr to a string for the prefix, int ptr to an array we want to print,
-        // number of elements in array
-    // prints array with a prefix
-    printf("%s", prefix);
-    printf("{%d", *array_ptr);
-    for (int i=1; i < n; i++){
-        printf(", %d", *(array_ptr + i));
-    }
-    fprintf(stdout, "}\n");
-}
-
-void shortestPath(Graph g, Vertex start, Vertex goal, int numV) {
-//    int *visited = mallocArray(numV);
-//    int *parent = mallocArray(numV);
-    
-    int *visited = malloc(numV * sizeof(int));
-    int *parent = malloc(numV * sizeof(int));
-
-    for (int lp_malloc=0; lp_malloc < numV; lp_malloc ++){
-        *(visited + lp_malloc) = UNVISITED;
-        *(parent + lp_malloc) = UNVISITED;
-    }
-    // int visited[MAX_WORDS] = {UNVISITED};    
-    // int parent[MAX_WORDS] = {UNVISITED};
-
-    printArray("INITIALISE Visited: ", visited, numV);   // debug
-    printArray("INITIALISE Parent : ", parent, numV);    // debug
-
-    // check if malloc was successful
-    // if (visited == NULL || parent == NULL) {
-    //     fprintf(stderr, ERROR_MEMORY);
-    //     exit(1);
-    // }
-
-   Quack q = createQuack();
-   qush(start, q);
-   showQuack(q);
-   int order = 0;
-   visited[start] = order++;
-   int found = 0;
-   printf("!isEmptyQuack(q) %d\n", !isEmptyQuack(q));
-   while (!isEmptyQuack(q) && !found) {      // FOUND TELLS US TO STOP        
-    // while (!isEmptyQuack(q)) {      // FOUND TELLS US TO STOP        
-      Vertex v = pop(q);      
-      for (Vertex w = 0; w < numV && !found; w++) {
-        // for (Vertex w = 0; w < numV; w++) {
-         if (isEdge(newEdge(v,w), g)) {      // for adjacent vertex w ...
-            if (visited[w] == UNVISITED) {   // ... if w is unvisited ...
-               qush(w, q);                   // ... queue w
-               printf("Doing edge %d-%d\n", v, w); // DEBUG
-               visited[w] = order++;         // w is now visited
-               parent[w] = v;                // w's PARENT is v
-               if (w == goal) {              // if w is the goal ...
-                  found = 1;                 // ..FOUND IT! NOW GET OUT
-               }
-            }
-         }
-      }
-   }
-   showQuack(q);
-   if (found) {    
-      printf("SHORTEST path from %d to %d is ", start, goal);
-      printPath(parent, numV, goal); // print path from START TO GOAL
-      putchar('\n');
-   }
-   else {
-      printf("no path found\n");
-   }
-   printArray("Visited: ", visited, numV);   // debug
-   printArray("Parent : ", parent, numV);    // debug
-   free(visited);
-   free(parent);
-   makeEmptyQuack(q);
-   return;
-}
-
-int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) {
-    // input: number of vertices, pointer to graph
-    // returns: pointer to the graph with edges added
-    int success = 0;             // returns true if no error
-    int dbo;
-
-    // double loop to pairwise check if there is an edge
-    for (int lp_readgraph_1=0; lp_readgraph_1 < numV; lp_readgraph_1 ++){        
-        for (int lp_readgraph_2=0; lp_readgraph_2 < numV; lp_readgraph_2 ++){    
-            if (strcmp(dict[lp_readgraph_1], dict[lp_readgraph_2]) != 0){  // if the words are different
-                dbo = differByOne(dict[lp_readgraph_1], dict[lp_readgraph_2]);
-                if (dbo){
-                    insertEdge(newEdge(lp_readgraph_1, lp_readgraph_2), g);
-                    success = 1;
-                }
-                if (verbose){
-                    printf("differByOne %d: %s, %d: %s... %d\n", lp_readgraph_1, dict[lp_readgraph_1], lp_readgraph_2,
-                        dict[lp_readgraph_2], dbo);            
-                }
-            }
-        }
-    }
-    return success;
-}
-
-int readDict(char my_dict[MAX_WORDS][MAX_CHAR]) {
-    // reads strings from stdin into an array of strings and returns a pointer to it
-    int dict_ctr = 0;
-    int num_words = 0;
-    while (scanf("%s", my_dict[dict_ctr]) != EOF) {
-        // printf("reading in %s\n", my_dict[dict_ctr]);
-        dict_ctr ++;
-        num_words += 1;
-    }
-    return num_words;
-}
-
-void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words){
-    // inputs: array of strings, number of words
-    // returns: void. prints the dictionary.
-    fprintf(stdout, "Dictionary\n");
-    for (int i=0; i < num_words; i++){
-        printf("%d: %s\n", i, my_dict[i]);
-    }
-}
-
 int differByOne(char * char_1_ptr, char * char_2_ptr){
     // inputs: 2 char pointers, all lower case alpha chars
         // checks by permuting SECOND argument
-        // e.g. checks FORWARD changes
+        // e.g. checks FORWARD changes (changes in 2nd argument)
     // returns:
         // 0 if doesn't differ by one
         // 1 if differs by one by changing one char
@@ -329,12 +308,12 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
         for (int lp_del_1=0; lp_del_1 < strlen(char_1_ptr); lp_del_1++){  // loop through and del one char at a time
             strcpy(char_temp_cpy_ptr, char_1_ptr);
             // remove ith char
-            *(char_temp_cpy_ptr + lp_del_1) = SENT_DEL;
+            *(char_temp_cpy_ptr + lp_del_1) = SENTINEL;
 
             // copy over new string with deleted char
             int mkr_del=0;  // marker for char_1_cpy_ptr
             for (int lp_del_2=0; *(char_temp_cpy_ptr + lp_del_2 ) != '\0'; lp_del_2++){
-                if (*(char_temp_cpy_ptr + lp_del_2 ) != SENT_DEL){  // if not SENT_DEL sentinal
+                if (*(char_temp_cpy_ptr + lp_del_2 ) != SENTINEL){  // if not SENTINEL sentinal
                     *(char_1_cpy_ptr + mkr_del) = *(char_temp_cpy_ptr + lp_del_2 );
                     mkr_del++;
                 }
@@ -383,15 +362,210 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
 }
 
 /***
- *      _____         _     ____        _ _       
- *     |_   _|__  ___| |_  / ___| _   _(_) |_ ___ 
- *       | |/ _ \/ __| __| \___ \| | | | | __/ _ \
- *       | |  __/\__ \ |_   ___) | |_| | | ||  __/
- *       |_|\___||___/\__| |____/ \__,_|_|\__\___|
- *                                                
+ *      ____                _    __          _       _      __                  _   _                 
+ *     |  _ \ ___  __ _  __| |  / / __  _ __(_)_ __ | |_   / _|_   _ _ __   ___| |_(_) ___  _ __  ___ 
+ *     | |_) / _ \/ _` |/ _` | / / '_ \| '__| | '_ \| __| | |_| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+ *     |  _ <  __/ (_| | (_| |/ /| |_) | |  | | | | | |_  |  _| |_| | | | | (__| |_| | (_) | | | \__ \
+ *     |_| \_\___|\__,_|\__,_/_/ | .__/|_|  |_|_| |_|\__| |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+ *                               |_|                                                                  
  */
-// marker you can ignore these
+int readDict(char my_dict[MAX_WORDS][MAX_CHAR]) {
+    // reads strings from stdin into an array of strings and returns a pointer to it
+    int dict_ctr = 0;
+    int num_words = 0;
+    char inp_str[MAX_CHAR] = "";
+    while (scanf("%s", inp_str) != EOF) {
+        // printf("reading in %s\n", my_dict[dict_ctr]);
+        // need to check if word is already in dictionary
+        // linear search (sorry, it's easier to implement)
+        int word_in_list = 0;
+        for (int word_num=0; word_num < MAX_WORDS; word_num++){
+            if (strcmp(inp_str, my_dict[word_num]) == 0){
+                word_in_list = 1;
+            }
+        }
+        // only add to graph if word not in list
+        if (word_in_list == 0){
+            strcpy(my_dict[dict_ctr], inp_str);
+            dict_ctr ++;
+            num_words += 1;
+        }
+        // else {
+        //     puts("WORD ALREADY IN LIST\n");
+        // }
+    }
+    return num_words;
+}
 
+int readIntoGraph(int numV, Graph g, char dict[MAX_WORDS][MAX_CHAR], int verbose) {
+    // input: number of vertices, pointer to graph
+    // returns: pointer to the graph with edges added
+    int success = 0;             // returns true if no error
+    int dbo;
+
+    // double loop to pairwise check if there is an edge
+    for (int lp_readgraph_1=0; lp_readgraph_1 < numV; lp_readgraph_1 ++){        
+        for (int lp_readgraph_2=0; lp_readgraph_2 < numV; lp_readgraph_2 ++){    
+            if (strcmp(dict[lp_readgraph_1], dict[lp_readgraph_2]) != 0){  // if the words are different
+                dbo = differByOne(dict[lp_readgraph_1], dict[lp_readgraph_2]);
+                if (dbo){
+                    insertEdge(newEdge(lp_readgraph_1, lp_readgraph_2), g);
+                    success = 1;
+                }
+                if (verbose){
+                    printf("differByOne %d: %s, %d: %s... %d\n", lp_readgraph_1, dict[lp_readgraph_1], lp_readgraph_2,
+                        dict[lp_readgraph_2], dbo);            
+                }
+            }
+        }
+    }
+    return success;
+}
+
+void printDict(char my_dict[MAX_WORDS][MAX_CHAR], int num_words){
+    // inputs: array of strings, number of words
+    // returns: void. prints the dictionary.
+    fprintf(stdout, "Dictionary\n");
+    for (int i=0; i < num_words; i++){
+        printf("%d: %s\n", i, my_dict[i]);
+    }
+}
+
+void printPathInt(int * path_ptr, char dict[MAX_WORDS][MAX_CHAR]){
+    // inputs: path_ptr is a pointer to an int array representation of the path, e.g. {0, 1, 3, 6} is
+        // word_0 -> word_1 -> word_3 -> word_6
+    // purpose: prints out the word path (natural langauge version)    
+    int word_count = 0;
+    int word=0;
+    printf("%s", dict[*(path_ptr + word)]);    
+    for (word=1; word < MAX_WORDS; word++){
+        if (*(path_ptr + word) != SENTINEL){                    
+            printf(" -> %s", dict[*(path_ptr + word)]);
+            word_count ++;          
+        }            
+    }
+    // printf(" (%d) \n", word_count);
+    putchar('\n');
+}
+
+void printPathListInt(int * path_ptr, char dict[MAX_WORDS][MAX_CHAR]){
+    // inputs: 2D int array ptr
+    // purpose: prints out the word path of all paths in my_path    
+    puts("printPathListInt");
+    int word_count = 0;
+    for (int path=0; path < MAX_PATHS; path++){
+        if (*(path_ptr + MAX_WORDS * path) != SENTINEL){
+            word_count = 0;
+            printf("PATH %d: ", path);
+            printPathInt((path_ptr + MAX_WORDS * path), dict);
+        }
+    }
+}
+
+void printPathStrInt(char * path_ptr, char dict[MAX_WORDS][MAX_CHAR]){
+    // inputs: path_ptr is a pointer to a str representation of the path, e.g. '0136' is
+        // word_0 -> word_1 -> word_3 -> word_6
+        // dict is the array of strings representing our input dictionary
+    // purpose: prints out the word path (natural langauge version)
+    // if (*(path_ptr) != '\0'){        
+        int word_count = 0;
+        for (int word=0; word < MAX_WORDS; word++){
+            if (*(path_ptr + word) != '\0'){                    
+                printf("-> %s ", dict[*(path_ptr + word) - '0']);
+                word_count ++;          
+            }            
+        }
+        printf(" (%d) \n", word_count);      
+    // }
+}
+
+void printPathListStrInt(char pathList_intStr[MAX_PATHS][MAX_WORDS], char dict[MAX_WORDS][MAX_CHAR]){
+    // inputs: array of strings representing paths
+    // purpose: prints out the word path of all paths in my_path
+    puts("printPathListStrInt\n");
+    int word_count = 0;
+    for (int path=0; path < MAX_PATHS; path++){
+        if (pathList_intStr[path][0] != '\0'){
+            word_count = 0;
+            printf("PATH %d: ", path);
+            printPathStrInt(pathList_intStr[path], dict);
+        }
+    }
+}
+
+void printPath(int parent[], int numV, Vertex v) {
+   if (parent[v] != UNVISITED) { // parent of start is UNVISITED
+      if (0 <= v && v < numV) {
+         printPath(parent, numV, parent[v]);
+         printf("-->");
+      }
+      else {
+         fprintf(stderr, "\nprintPath: invalid goal %d\n", v);
+      }
+   }
+   printf("%d", v); // the last call will print here first
+   return;
+}
+
+/***
+ *      _   _      _                    __                  _   _                 
+ *     | | | | ___| |_ __   ___ _ __   / _|_   _ _ __   ___| |_(_) ___  _ __  ___ 
+ *     | |_| |/ _ \ | '_ \ / _ \ '__| | |_| | | | '_ \ / __| __| |/ _ \| '_ \/ __|
+ *     |  _  |  __/ | |_) |  __/ |    |  _| |_| | | | | (__| |_| | (_) | | | \__ \
+ *     |_| |_|\___|_| .__/ \___|_|    |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|___/
+ *                  |_|                                                           
+ */
+void printArray_char(char * prefix, int * array_ptr, int n){
+    // inputs: char ptr to a string for the prefix, int ptr to an array we want to print,
+        // number of elements in array
+    // prints array with a prefix
+    printf("%s", prefix);
+    printf("{%d", *array_ptr);
+    for (int i=1; i < n; i++){
+        printf(", %d", *(array_ptr + i));
+    }
+    fprintf(stdout, "}\n");
+}
+
+void printArray_int(char * prefix, int * array_ptr, int n){
+    // inputs: char ptr to a string for the prefix, int ptr to an array we want to print,
+        // number of elements in array
+    // prints array with a prefix
+    printf("%s", prefix);
+    printf("{%d", *array_ptr);
+    for (int i=1; i < n; i++){
+        printf(", %d", *(array_ptr + i));
+    }
+    fprintf(stdout, "}\n");
+}
+
+int * copy_IntArray(int * source, int length){
+    // input: int array ptr
+    // returns a ptr to a copy of the int array
+    int * ptr = malloc(length * sizeof(int));
+    checkMalloc(ptr);
+    memcpy(ptr, source, length * sizeof(int));
+    return ptr;
+}
+
+void checkMalloc(void * ptr){
+    // input: pointer
+    // checks if malloc worked (e.g. NULL not returned)
+    if (ptr == NULL){
+        fprintf(stderr, ERROR_MEMORY);
+        exit(1);
+    }   
+}
+
+/***
+ *      _____         _       
+ *     |_   _|__  ___| |_ ___ 
+ *       | |/ _ \/ __| __/ __|
+ *       | |  __/\__ \ |_\__ \
+ *       |_|\___||___/\__|___/
+ *                            
+ */
+// Albert/Harrison you can ignore these
 void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * correct, int verbose){
     // input: two char ptrs and expected result to differByOne
     // output: increments total and correct appropriately
