@@ -40,6 +40,34 @@ void push(int data, Quack qs) {
    return;
 }
 
+void qush(int data, Quack qs) {
+	puts("=== we are qushing! ===\n");
+	// Step 0: Create new node
+	Quack newnode = NULL;  // Quack is a pointer to a node
+	newnode = malloc(sizeof(struct node));
+	if (newnode == NULL){
+		fprintf(stderr, "not enough memory");
+		exit(EXIT_FAILURE);
+	}
+	newnode->data = data;
+	newnode->next = NULL;
+	printf("newnode->data = %c\n", newnode->data);
+
+	// Step 1: traverse to the end of the stack
+	Quack last_node_ptr = qs;
+	while (last_node_ptr->next != NULL){
+		if (last_node_ptr->data != INT_MAX){
+			printf("traversing... %c\n", last_node_ptr->data);
+		}
+		last_node_ptr = last_node_ptr->next;
+	}
+
+	// put at end of the stack, back patching
+	printf("adding to last node in linked list... %c\n", newnode->data);
+	last_node_ptr->next = newnode;
+	
+}
+
 int pop(Quack qs) {
    int retval = 0;
    if (qs == NULL) {

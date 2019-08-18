@@ -1,3 +1,9 @@
+revargLL: revarg.c quackLL.c
+	dcc -Wall -o revargLL revarg.c quackLL.c
+
+baseLL: base.c quackLL.c
+	dcc -Wall -O3 -o baseLL base.c quackLL.c
+
 prefixes: prefixes.c
 	dcc -Wall -O3 -o prefixes prefixes.c
 
@@ -10,5 +16,5 @@ base2: base2.c quack.c
 structs: structs.c
 	dcc -Wall -O3 -o structs structs.c
 
-1: pointers.c
+pointers: pointers.c
 	dcc -Wall -O3 -o pointers pointers.c
