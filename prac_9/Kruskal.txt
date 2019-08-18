@@ -1,0 +1,20 @@
+# start with empty MST (minimum spanning tree, tree that has all vertices and the lowest path cost`)
+# consider edges in increasing weight order
+# add edge to the MST if it does not form a cycle
+# repeat until V-1 edges are added
+
+MST:
+{3, 5} ... 18
+{3, 5, 1, 7} ... 21
+{3, 5, 1, 7, 6, 7} ... 25
+{3, 5, 1, 7, 6, 7, 0, 2} ... 29
+{3, 5, 1, 7, 6, 7, 0, 2, 0, 7} ... 31
+0, 1 (32) creates a cycle
+{3, 5, 1, 7, 6, 7, 0, 2, 0, 7, 3, 4} ... 34
+4, 5 (40) creates a cycle
+{3, 5, 1, 7, 6, 7, 0, 2, 0, 7, 3, 4, 4, 7} ... 46
+{3, 5, 1, 7, 6, 9, 2, 4} <- all vertices in here
+
+18 + 21 + 25+ 29 + 31 + 34 + 46 = 204
+
+drawing the tree it is the same as using Prim's algorithm and has the same total edge cost

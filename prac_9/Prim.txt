@@ -1,0 +1,34 @@
+
+
+MST: {0}
+rest vertex: 2
+cost: 29
+
+MST: {0, 2}
+rest vertex: 7
+cost: 31
+
+MST: {0, 2, 7}
+rest vertex: 1
+cost: 21
+
+MST: {0, 2, 7, 1}
+rest vertex: 6
+cost: 25
+
+MST: {0, 2, 7, 1, 6}
+rest vertex: 4 
+cost: 46
+
+MST: {0, 2, 7, 1, 6, 4}
+rest vertex: 3
+cost: 34
+
+
+MST: {0, 2, 7, 1, 6, 4, 3}
+rest vertex: 5
+cost: 18
+
+MST: {0, 1, 2, 3, 4, 5, 6, 7}
+
+29 + 31 + 21 + 25+ 46 + 34 + 18 = 204

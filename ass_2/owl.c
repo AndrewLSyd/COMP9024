@@ -1,20 +1,34 @@
 // Ordered Word Letters Assignment
 // COMP9024 Andrew Lau z3330164
-// ===== README =====
-// Hi Albert/Harrison,
-// Summary of program:
-    //
-// Structure:
-// Thanks!
-// removing strings passed 27/46, MAX_PATHS = 1005
-// MAX_PATHS = 10_000... passed 30!
-// MAX_PATHS = 100_000...passsed 32?
-// MAX_PATHS = 1_000_000...passsed X?? <_ this is really slow though?
-// MAX_PATHS = 100_000, added limit to 99 max laders... passed 34
-// MAX_PATHS = 100_000, MAX_LADDERS = 99, no dup. dict words ... passed 37
-// let's try realloc...??
-// longest word ladders past 99 are omitted
-// test case 25... seems to be need a lot of room for max paths!
+
+// ===== SUMMARY OF PROGRAM FOR MARKER
+// ===== PART 1: Reading input into a graph   
+
+// ===== PART 2: Exploring all paths
+// A recursive DFS search is used to explore all possible paths. A pointer to path_intArray is
+// passed to each recursive DFS call (and a copy made to allow for branching) to keep track
+// of the current path. All explored paths are saved in pathList_intArray which is effectively
+// a dynamic memory allocated 2D int array. When the recursive DFS hits a leaf node, the path
+// travelled will be saved into pathList_intArray
+
+// ===== PART 3: Finding the longest path
+// We now have a list of all possible paths, we first create a list of all the lengths of each
+// path (3a). Then, we find the lengths of all the paths (3b). Finally the longest paths are
+// printed. Due to the nature of the input (already in alphabetical order) and the DFS search
+// the output is in alphabetical order.
+
+// This program seems to work well for problems with a smaller number of possible paths. I realised
+// later in the development that when there are many, many paths my initially fixed memory
+// allocation did not provide enough space for larger numbers of paths. I have changed the design
+// to use dynamic memory allocation to try an get around this, but the program still gets killed
+// by the OS when attempting OWL problems with many, many possible paths. I suspect my recursive DFS
+// is not the most efficient, possibly having far too many function calls sitting in memory waiting
+// to return. The other issue with my DFSr is that ALL paths are searched and kept in memory before
+// going back and finding the largest ones. Perhaps an iterative deepening DFS where only the latest
+// height of paths are kept could have been used.
+
+// Thanks for marking :)
+// Andrew
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,8 +40,8 @@
 
 #define MAX_WORDS 1005  // max number of words in dictionary (max vertices)
 #define MAX_CHAR 25  // max characters per word in dictionary
-#define MAX_PATHS 4  // max number of paths we can search
-#define MAX_LADDERS 99  // max. number of word ladders to display
+#define MAX_PATHS 100  // max number of paths we can search. This is dynamically reallocated (doubling each realloc)
+#define MAX_LADDERS 99  // max. number of word ladders to display (99 as per Albert's forum post)
 #define SENTINEL -1 // sentinel to indicate end of something (used in various places)
 #define UNVISITED -1  // -1 to indicated invisted vertex for BFS
 #define ASCII_START 97  // letter a lowercase in ASCII code
@@ -36,22 +50,8 @@
 
 // function prototypes for main OWL program
 int differByOne(char * char_1_ptr, char * char_2_ptr);
-void dfsR(
-    // use recursive DFS to search ALL possible paths in the tree
-    // a temp_str pointer is passed to each recursive function call
-    // and once a leaf node is reached, this string representing
-    // the entire path is saved into an array representing all possible paths
-    // inputs:
-    Graph g,  // g is a ptr to the graph
-    Vertex v,  // current vertex number
-    int numV,  // numV is the number of vertices in the graph
-    char my_dict[MAX_WORDS][MAX_CHAR],  // my_dict is the dictionary of words
-    // char * pathList_StrPrnt,  // pathList_StrPrnt is a string representation of the path
-    int * path_num_ptr,
-    int * path_intArray_ptr,
-    int * pathList_intArray_ptr,
-    int * max_paths_ptr  // for dynamic memory allocation
-    );
+void dfsR(Graph g, Vertex v, int numV, char my_dict[MAX_WORDS][MAX_CHAR], int * path_num_ptr, int * path_intArray_ptr,
+    int **pathList_intArray_ptr_ptr, int * max_paths_ptr);
 
 // function prototypes used for reading/printing
 int readDict(char my_dict[MAX_WORDS][MAX_CHAR]);
@@ -71,21 +71,24 @@ void printArray_int(char * prefix, int * array_ptr, int n);
 // function prototypes for test suite   
 int testDifferByOne(int verbose);
 
-int main(void){    
-    // puts("testing differByOne()");
-    // testDifferByOne(0);
-
-    // read strings into an array of strings
+int main(void){        
     int num_words;
     char my_dict[MAX_WORDS][MAX_CHAR];
+    // testDifferByOne(0);
+
+    // ===== PART 1: Reading input into a graph    
     num_words = readDict(my_dict);    
-    printDict(my_dict, num_words);
-    // printf("num_words %d", num_words);
+    printDict(my_dict, num_words);    
 
     Graph g = newGraph(num_words);
     fprintf(stdout, "Ordered Word Ladder Graph\n");    
     readIntoGraph(num_words, g, my_dict, 0);
     showGraph(g);
+
+    // ===== PART 2: Exploring all paths
+    // All explored paths are saved in pathList_intArray which is effectively a 2D int array.
+    // We first initialise everything and then run a recursive DFS to explore every possible path.
+    // When the recursive DFS hits a leaf node, the path travelled will be saved into pathList_intArray
 
     // initialising path vars (used to store path in recursive DFS calls)    
     int * path_intArray = NULL;  // stored as an int array FINAL one used
@@ -94,16 +97,18 @@ int main(void){
 
     // initialising path list (lists of all paths)
     // char pathList_StrPrnt[10000] = "";  <-- used for DEBUG    
-    int * pathList_intArray_ptr = NULL;
+    int * temp = NULL;
+    int ** pathList_intArray_ptr_ptr = &temp;
     int max_paths = MAX_PATHS;
-    pathList_intArray_ptr = malloc(max_paths * MAX_WORDS * sizeof(int));
-    checkMalloc(pathList_intArray_ptr);  // function that checks if NULL was returned by malloc
+    *pathList_intArray_ptr_ptr = malloc(max_paths * MAX_WORDS * sizeof(int));
+    checkMalloc(*pathList_intArray_ptr_ptr);  // function that checks if NULL was returned by malloc
+    
 
     // initialise paths/path lists all to sentinels (just in case)
     for (int i=0; i < max_paths; i ++){
         for (int j=0; j < MAX_WORDS; j ++){
             // pathList_intStr[i][j] = '\0';        
-            *(pathList_intArray_ptr + i * MAX_WORDS + j) = SENTINEL;
+            *(*pathList_intArray_ptr_ptr + i * MAX_WORDS + j) = SENTINEL;
         }
     }
     for (int k=0; k < MAX_WORDS; k++){
@@ -111,26 +116,29 @@ int main(void){
     }
 
     int path_num = 0;
-    // loop DFS search over all vertices
-    // printPathListStrInt(pathList_intStr, my_dict);
+    // loop DFS search over all starting vertices    
     for (int vertex=0; vertex < num_words; vertex ++){
-        dfsR(g, vertex, num_words, my_dict
-            // , pathList_StrPrnt
-            // , pathList_intStr
-            // , path_intStr
-            , &path_num, path_intArray, pathList_intArray_ptr, &max_paths);
+        dfsR(g, vertex, num_words, my_dict, &path_num, path_intArray, pathList_intArray_ptr_ptr,
+            &max_paths);
     }    
 
-    // printPathListInt(pathList_intArray_ptr, my_dict);
-    // step 1: create array that has the lenths of all the paths
+    // printPathListInt(*pathList_intArray_ptr_ptr, my_dict);
+
+    // ===== PART 3: Finding the longest path
+    // We now have a list of all possible paths, we first create a list of all the lengths of each
+    // path (3a). Then, we find the lengths of all the paths (3b). Finally the longest paths are
+    // printed. Due to the nature of the input (already in alphabetical order) and the DFS search
+    // the output is in alphabetical order.
+    // Part 3 (a): create array that has the lenths of all the paths
     int * pathLengths_intArray_ptr = NULL;
     pathLengths_intArray_ptr = malloc(max_paths * sizeof(int));
+
     for (int lp_pliap=0; lp_pliap < max_paths; lp_pliap ++){
         *(pathLengths_intArray_ptr + lp_pliap) = SENTINEL;
     }
     
-    // step 2: find length of all the paths
-    int * path_ptr = pathList_intArray_ptr;
+    // Part 3 (b): find length of all the paths
+    int * path_ptr = *pathList_intArray_ptr_ptr;
     int path_counter = 0;
     int max_len = 0;
 
@@ -150,18 +158,27 @@ int main(void){
         path_ptr += MAX_WORDS;  // next path
     }
 
+    // printout of all paths searched (for debug)
     // printArray_int("pathLengths_intArray_ptr", pathLengths_intArray_ptr, MAX_PATHS);
 
-    // step 3: print out paths with max lengths
+    // Part 3 (c)
     printf("Longest ladder length: %d\nLongest ladders:\n", max_len);
     int longest_ladder_counter = 0;
     for (int lp_iap2=0; *(pathLengths_intArray_ptr + lp_iap2) != SENTINEL; lp_iap2++){
         if (*(pathLengths_intArray_ptr + lp_iap2) == max_len && longest_ladder_counter < MAX_LADDERS){            
             longest_ladder_counter ++;
             printf("%2d: ", longest_ladder_counter);
-            printPathInt(pathList_intArray_ptr + lp_iap2 * MAX_WORDS, my_dict);            
+            printPathInt(*pathList_intArray_ptr_ptr + lp_iap2 * MAX_WORDS, my_dict);            
         }
-    } 
+    }
+
+    // clean-up: freeing pointers and getting rid of dangling pointers
+    free(path_intArray);
+    path_intArray = NULL;
+    free(*pathList_intArray_ptr_ptr);
+    *pathList_intArray_ptr_ptr = NULL;
+    free(pathLengths_intArray_ptr);
+    pathLengths_intArray_ptr = NULL;
 
     return EXIT_SUCCESS;
 }
@@ -176,18 +193,17 @@ int main(void){
  */
 void dfsR(
     // use recursive DFS to search ALL possible paths in the tree
-    // a temp_str pointer is passed to each recursive function call
-    // and once a leaf node is reached, this string representing
-    // the entire path is saved into an array representing all possible paths
+    // a path_num_ptr pointer is passed to each recursive function call to keep track of the current path
+    // once a leaf node is reached, the path is written to a 2D array recording all the possible paths
     // inputs:
     Graph g,  // g is a ptr to the graph
     Vertex v,  // current vertex number
     int numV,  // numV is the number of vertices in the graph
     char my_dict[MAX_WORDS][MAX_CHAR],  // my_dict is the dictionary of words
-    // char * pathList_StrPrnt,  // pathList_StrPrnt is a string representation of the path
-    int * path_num_ptr,
-    int * path_intArray_ptr,
-    int * pathList_intArray_ptr,
+    // char * pathList_StrPrnt,  // pathList_StrPrnt is a string representation of the path DEBUG only
+    int * path_num_ptr,  // the number of paths explored so far
+    int * path_intArray_ptr,  // this is the pointer passed to each recursive call that keeps track of the current path
+    int ** pathList_intArray_ptr_ptr,  // pointer to the 2D array recording all possible paths
     int * max_paths_ptr  // for dynamic memory allocation
     ) {        
     
@@ -220,47 +236,41 @@ void dfsR(
             // , pathList_intStr
             // , temp_str_int
             , path_num_ptr, temp_int_arr_ptr,
-                pathList_intArray_ptr, max_paths_ptr);            
+                pathList_intArray_ptr_ptr, max_paths_ptr);            
       }
    }
    if (has_children == 0){  // e.g. if leaf node
-        // save full path in path list
+        // save  path in path list
         // temp_str is a DEBUG, prints entire path when leaf node is reached
         // printf("PATH: %s\n", temp_str);
         // strcpy(pathList_intStr[*path_num_ptr], temp_str_int);
-        // dynamic memory allocation
         
-        if (*path_num_ptr == ((*max_paths_ptr) - 1)){
-            // pathList_intArray_ptr = malloc(max_paths * MAX_WORDS * sizeof(int));            
-            *max_paths_ptr = *max_paths_ptr * 2;  // double memory allocation if run out
-            printf("REALLOC max_paths now %d\n", *max_paths_ptr);            
-            pathList_intArray_ptr = (int*)realloc(pathList_intArray_ptr, (*max_paths_ptr) * MAX_WORDS * sizeof(int));
+        // dynamic memory allocation (when pathList is full)        
+        if (*path_num_ptr == ((*max_paths_ptr - 1))){
+            *max_paths_ptr = (*max_paths_ptr) * 2;  // double memory allocation if run out            
+            *pathList_intArray_ptr_ptr = realloc(*pathList_intArray_ptr_ptr, (*max_paths_ptr) * MAX_WORDS * sizeof(int));
             checkMalloc(path_intArray_ptr);
-            
-            // SENTINELS!
+            // SENTINELS
             for (int i=(*max_paths_ptr)/2; i < *max_paths_ptr; i ++){
                 for (int j=0; j < MAX_WORDS; j ++){                    
-                    *(pathList_intArray_ptr + i * MAX_WORDS + j) = SENTINEL;
+                    *(*pathList_intArray_ptr_ptr + i * MAX_WORDS + j) = SENTINEL;
                 }
             }
-            printf("REALLOC DONE, (*max_paths_ptr) * MAX_WORDS is %d ints\n", (*max_paths_ptr) * MAX_WORDS);
+            // printf("DEBUG: REALLOC DONE, (*max_paths_ptr) * MAX_WORDS is %d ints\n", (*max_paths_ptr) * MAX_WORDS);
         }
-        printf("*path_num_ptr is %d, MAX_WORDS * (*path_num_ptr) is %d\n", *path_num_ptr, MAX_WORDS * (*path_num_ptr));
         // point to beginning of path
-        int * path_ptr = (pathList_intArray_ptr + MAX_WORDS * (*path_num_ptr));
-        puts("path_ptr assigned\n");
+        int * path_ptr = (*pathList_intArray_ptr_ptr + MAX_WORDS * (*path_num_ptr));
         
+        // write current path to 2D array representing all possible paths
         for (int lp_path_ptr=0; *(temp_int_arr_ptr + lp_path_ptr) != SENTINEL && lp_path_ptr < MAX_WORDS; lp_path_ptr++){
-            // printf("*(temp_int_arr_ptr + lp_path_ptr) = %d, *temp_int_arr_ptr = %d, lp_path_ptr = %d", *(temp_int_arr_ptr + lp_path_ptr), *temp_int_arr_ptr, lp_path_ptr);
-            // printf("\tassigning *(temp_int_arr_ptr + lp_path_ptr) = %d to *path_ptr = %d\n", *(temp_int_arr_ptr + lp_path_ptr),*path_ptr);
-            //HERE!
-            printf("*(temp_int_arr_ptr + lp_path_ptr) is %d\n", *(temp_int_arr_ptr + lp_path_ptr));
             *path_ptr =  *(temp_int_arr_ptr + lp_path_ptr);
             path_ptr ++;
         }
         (*path_num_ptr) ++;
    }
-  
+   // clean-up
+   free(temp_int_arr_ptr);
+   temp_int_arr_ptr = NULL;
    return;
 }
 
@@ -357,6 +367,13 @@ int differByOne(char * char_1_ptr, char * char_2_ptr){
             }
         }
     }
+
+    free(char_1_cpy_ptr);
+    char_1_cpy_ptr = NULL;
+    free(char_2_cpy_ptr);
+    char_2_cpy_ptr = NULL;
+    free(char_temp_cpy_ptr);
+    char_temp_cpy_ptr = NULL;
 
     return dbo;
 }
@@ -565,7 +582,8 @@ void checkMalloc(void * ptr){
  *       |_|\___||___/\__|___/
  *                            
  */
-// Albert/Harrison you can ignore these
+// Albert/Harrison you can ignore these (it's not great C, but I just cobbled it together quickly for
+// some testing). Their calls have been commented out anyways.
 void testDifferByOneHelper(char * x, char * y, int expected, int * total, int * correct, int verbose){
     // input: two char ptrs and expected result to differByOne
     // output: increments total and correct appropriately

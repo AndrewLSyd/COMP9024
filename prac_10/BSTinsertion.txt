@@ -1,0 +1,57 @@
+(a) Insert the following keys 10 20 5 30 15 25 24 into a BST using at-the-leaf insertion.
+
+      10
+     /  \
+   5      20
+        /    \
+       15     30
+             /
+             25
+            /
+           24
+
+(b) What is the height of the resulting tree?
+4
+
+(c) Show the resulting trees after deleting 5, then 30, and finally 20. Show the result for both DLMD and DRMD when appropriate.
+
+delete 5. leaf node so just delete
+      10
+        \
+          20
+        /    \
+       15     30
+             /
+             25
+            /
+           24
+
+delete 30. node has one child, just replace with child
+      10
+        \
+          20
+        /    \
+       15     25
+             /
+             24
+
+delete 20. node has two children, replace with DLMD or DRMD
+(1) reaplce with DRMD
+      10
+        \
+          15
+             \
+              25
+             /
+             24
+(2) reaplce with DLMD
+      10
+        \
+          24
+        /    \
+       15     25
+             
+             
+
+
+What are the heights of the resulting trees?

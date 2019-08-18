@@ -1,0 +1,18 @@
+(a)
+BST - yes
+Heap - no
+(b)
+BST - no
+Heap - yes
+(c)
+BST - no
+Heap - yes
+(d)
+BST - no
+Heap - yes
+(e)
+BST - yes
+Heap - yes
+(f)
+BST - yes
+Heap - yes
